@@ -3,102 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prime Lands Sri Lanka</title>
+    <title>CNV HOLDINGS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Noto+Sans+Sinhala:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', 'Noto Sans Sinhala', sans-serif; overflow: hidden; }
         
-        /* Layouts */
-        .sidebar { width: 400px; height: 100vh; overflow-y: auto; background: white; z-index: 20; position: relative; box-shadow: 5px 0 20px rgba(0,0,0,0.05); }
+        /* Sidebar Styles */
+        .sidebar { width: 420px; height: 100vh; background: #ffffff; z-index: 20; position: relative; box-shadow: 10px 0 30px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
         .map-wrapper { flex: 1; height: 100vh; position: relative; }
         #map { width: 100%; height: 100%; }
 
+        /* Beautiful Map Markers CSS */
+        .amenity-marker {
+            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 50%;
+            border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-size: 18px; transition: transform 0.2s;
+        }
+        .amenity-marker:hover { transform: scale(1.2); z-index: 1000 !important; }
+        
+        /* Colors for Categories */
+        .marker-school { background: #3b82f6; color: white; } /* Blue */
+        .marker-hospital { background: #ef4444; color: white; } /* Red */
+        .marker-shop { background: #f97316; color: white; } /* Orange */
+
         /* Detail Panel Slide */
         #detail-panel {
-            position: absolute; top: 0; left: 0; width: 400px; height: 100vh;
+            position: absolute; top: 0; left: 0; width: 420px; height: 100vh;
             background: white; z-index: 30; transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; flex-direction: column;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column; box-shadow: 10px 0 30px rgba(0,0,0,0.1);
         }
         #detail-panel.open { transform: translateX(0); }
 
-        /* Mobile Adjustments */
+        /* Mobile */
         @media (max-width: 768px) {
-            .sidebar { width: 100%; position: absolute; bottom: 0; height: 45vh; top: auto; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
+            .sidebar { width: 100%; height: 50vh; position: absolute; bottom: 0; border-radius: 20px 20px 0 0; z-index: 40; transform: translateY(0); transition: transform 0.3s; }
             .sidebar.minimized { transform: translateY(100%); }
             #detail-panel { width: 100%; z-index: 50; }
-            .map-wrapper { height: 100vh; width: 100%; position: absolute; }
+            .map-wrapper { height: 100vh; position: absolute; width: 100%; top: 0; }
         }
-
-        /* Custom Scroll */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     </style>
 </head>
-<body class="bg-gray-50 flex flex-col md:flex-row h-screen">
+<body class="bg-slate-50 flex flex-col md:flex-row h-screen">
 
-    <div id="sidebar" class="sidebar flex flex-col">
-        <div class="p-6 bg-white/95 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-100">
-            <h1 class="text-2xl font-extrabold text-slate-900 mb-4">Find Your Land 🏡</h1>
-            
+    <div id="sidebar" class="sidebar">
+        <div class="p-6 bg-white z-10 border-b border-slate-100">
+            <h1 class="text-2xl font-extrabold text-slate-800 mb-4 tracking-tight">Discover Lands 🌴</h1>
             <div class="relative">
-                <input type="text" id="searchInput" placeholder="Search city (e.g. Kottawa)..." 
-                       class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-green-500 transition">
+                <input type="text" id="searchInput" placeholder="Search (e.g. Kottawa)..." 
+                       class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-green-500 transition text-sm font-medium">
                 <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
             </div>
         </div>
 
-        <div id="landList" class="p-4 space-y-4 flex-1">
+        <div id="landList" class="p-4 space-y-4 flex-1 overflow-y-auto">
             </div>
     </div>
 
-    <div id="detail-panel" class="shadow-2xl">
-        <div class="p-4 flex items-center justify-between border-b bg-white z-10">
+    <div id="detail-panel">
+        <div class="p-4 flex items-center justify-between border-b border-slate-100 bg-white">
             <button onclick="closeDetail()" class="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-bold text-sm">
-                ← Back to List
+                ← Back
             </button>
-            <button onclick="shareLink()" class="bg-slate-100 p-2 rounded-full hover:bg-green-50 text-slate-600 hover:text-green-600 transition" title="Copy Link">
+            <button onclick="shareLink()" class="bg-slate-50 p-2 rounded-full hover:bg-green-50 text-slate-500 hover:text-green-600 transition" title="Copy Link">
                 🔗 Share
             </button>
         </div>
 
-        <div class="h-64 bg-slate-200 relative group flex-shrink-0">
-            <img id="detailImg" src="" class="w-full h-full object-cover">
+        <div class="h-64 bg-slate-100 relative group flex-shrink-0">
+            <img id="detailImg" src="" class="w-full h-full object-cover transition duration-300">
             <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-            <button onclick="slide(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/30 text-white p-2 rounded-full hover:bg-white/50 backdrop-blur-sm">❮</button>
-            <button onclick="slide(1)" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/30 text-white p-2 rounded-full hover:bg-white/50 backdrop-blur-sm">❯</button>
-            <span id="detailBadge" class="absolute bottom-4 left-4 px-3 py-1 rounded text-xs font-bold uppercase text-white bg-green-600">Available</span>
+            
+            <button onclick="slide(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white p-2 rounded-full transition">❮</button>
+            <button onclick="slide(1)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white p-2 rounded-full transition">❯</button>
+            
+            <span id="detailBadge" class="absolute bottom-4 left-4 px-3 py-1 rounded-md text-[10px] font-extrabold uppercase text-white bg-green-600 shadow-lg">Available</span>
         </div>
 
         <div class="flex-1 overflow-y-auto p-6">
             <h2 id="detailTitle" class="text-2xl font-bold text-slate-900 leading-tight mb-1"></h2>
-            <p id="detailLocation" class="text-green-600 font-bold mb-6 flex items-center gap-1">📍 Location</p>
+            <p id="detailLocation" class="text-green-600 font-bold mb-6 flex items-center gap-1 text-sm">📍 Location</p>
 
             <div class="grid grid-cols-2 gap-3 mb-6">
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                    <p class="text-[10px] uppercase text-slate-400 font-bold">Extent</p>
+                    <p class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Extent</p>
                     <p id="detailPerches" class="font-bold text-slate-800 text-lg"></p>
                 </div>
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                    <p class="text-[10px] uppercase text-slate-400 font-bold">Price/Perch</p>
+                    <p class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Price/Perch</p>
                     <p id="detailPrice" class="font-bold text-green-600 text-lg"></p>
                 </div>
             </div>
 
-            <h3 class="font-bold text-slate-800 mb-2">Description</h3>
+            <h3 class="font-bold text-slate-800 text-sm mb-2">Description</h3>
             <p id="detailDesc" class="text-slate-600 text-sm leading-relaxed whitespace-pre-line mb-6"></p>
 
-            <h3 class="font-bold text-slate-800 mb-2">Nearby (Calculated)</h3>
-            <div id="nearbyList" class="text-sm text-slate-500 italic mb-6">Calculating...</div>
+            <h3 class="font-bold text-slate-800 text-sm mb-3">Nearby Highlights</h3>
+            <div id="nearbyList" class="space-y-2 mb-6 text-sm text-slate-500">Calculating...</div>
         </div>
 
-        <div class="p-4 border-t bg-white grid grid-cols-2 gap-3">
-            <a id="waBtn" href="#" target="_blank" class="bg-[#25D366] text-white py-3 rounded-xl font-bold text-center hover:bg-[#20bd5a] flex items-center justify-center gap-2">
+        <div class="p-4 border-t border-slate-100 bg-white grid grid-cols-5 gap-3">
+            <a id="waBtn" href="#" target="_blank" class="col-span-3 bg-[#25D366] text-white py-3 rounded-xl font-bold text-center hover:bg-[#20bd5a] flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 transition">
                 WhatsApp
             </a>
-            <a href="tel:+94725486676" class="bg-slate-900 text-white py-3 rounded-xl font-bold text-center hover:bg-slate-800 flex items-center justify-center gap-2">
+            <a href="tel:+94725486676" class="col-span-2 bg-slate-900 text-white py-3 rounded-xl font-bold text-center hover:bg-slate-800 flex items-center justify-center gap-2 transition">
                 📞 Call
             </a>
         </div>
@@ -106,45 +117,51 @@
 
     <div class="map-wrapper">
         <div id="map"></div>
-        
-        <button onclick="toggleMobileView()" class="md:hidden absolute bottom-6 right-6 z-[400] bg-slate-900 text-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2">
-            🗺️ Toggle Map/List
+        <button onclick="toggleMobile()" class="md:hidden absolute bottom-6 right-6 z-[400] bg-slate-900 text-white px-5 py-3 rounded-full font-bold shadow-2xl">
+            🗺️ Map / List
         </button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyA30v8yswbyqF-oB29C7DXPWpKwCQscs5o", authDomain: "land-425be.firebaseapp.com", projectId: "land-425be", storageBucket: "land-425be.firebasestorage.app", messagingSenderId: "1053755182230", appId: "1:1053755182230:web:9596bee1de56a3c63e86b7", measurementId: "G-DQVYCKN9KY" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Map
-        const map = L.map('map', { zoomControl: false }).setView([6.9271, 79.8612], 9);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        const map = L.map('map', { zoomControl: false }).setView([6.9271, 79.8612], 10);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
         L.control.zoom({ position: 'topright' }).addTo(map);
 
         let landsData = [];
         let markers = {};
         let nearbyLayer = L.layerGroup().addTo(map);
 
-        // Fetch Lands
+        // Fetch & Delete Logic (Client side check for display)
         async function loadLands() {
             const snap = await getDocs(collection(db, "lands"));
             const listDiv = document.getElementById('landList');
-            
+            const now = new Date();
+
             snap.forEach(doc => {
                 const data = doc.data(); data.id = doc.id;
+                
+                // Hide if sold > 3 days (Visual check only, Admin deletes technically)
+                if (data.status === 'sold' && data.soldAt) {
+                    const soldDate = new Date(data.soldAt.seconds ? data.soldAt.seconds*1000 : data.soldAt);
+                    const diffDays = Math.ceil(Math.abs(now - soldDate) / (1000 * 60 * 60 * 24));
+                    if(diffDays > 3) return; // Skip Rendering
+                }
+
                 if(!data.imageUrls) data.imageUrls = [data.imageUrl];
                 landsData.push(data);
-                
                 renderCard(data, listDiv);
                 addMarker(data);
             });
 
-            // Check URL for Share ID
+            // Handle Share Link
             const urlParams = new URLSearchParams(window.location.search);
             const sharedId = urlParams.get('id');
             if(sharedId) {
@@ -154,14 +171,16 @@
         }
 
         function renderCard(data, container) {
+            const isSold = data.status === 'sold';
             const div = document.createElement('div');
-            div.className = "bg-white p-3 rounded-2xl border border-slate-100 hover:shadow-lg transition cursor-pointer flex gap-3 group";
+            div.className = "bg-white p-3 rounded-2xl border border-slate-100 hover:shadow-lg transition cursor-pointer flex gap-3 group relative overflow-hidden";
             div.innerHTML = `
-                <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0">
+                <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 relative">
                     <img src="${data.imageUrls[0]}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                    ${isSold ? '<div class="absolute inset-0 bg-red-500/20 flex items-center justify-center"><span class="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded">SOLD</span></div>' : ''}
                 </div>
                 <div class="flex-1 flex flex-col justify-center">
-                    <h3 class="font-bold text-slate-800 leading-tight mb-1">${data.title}</h3>
+                    <h3 class="font-bold text-slate-800 leading-tight mb-1 line-clamp-1">${data.title}</h3>
                     <p class="text-xs text-slate-500 mb-2">📍 ${data.location}</p>
                     <p class="text-green-600 font-bold text-sm">Rs. ${data.pricePerPerch}/P</p>
                 </div>
@@ -172,109 +191,112 @@
 
         function addMarker(data) {
             if(data.lat) {
-                const marker = L.marker([data.lat, data.lng]).addTo(map);
+                const isSold = data.status === 'sold';
+                const color = isSold ? '#ef4444' : '#16a34a'; // Red or Green
+                
+                // Beautiful Land Marker
+                const icon = L.divIcon({
+                    className: '',
+                    html: `<div style="background:${color}; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>`
+                });
+
+                const marker = L.marker([data.lat, data.lng], {icon: icon}).addTo(map);
                 marker.on('click', () => openDetail(data));
                 markers[data.id] = marker;
             }
         }
 
-        // --- SEARCH ---
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const container = document.getElementById('landList');
-            container.innerHTML = '';
-
-            landsData.forEach(land => {
-                const match = land.location.toLowerCase().includes(term) || land.title.toLowerCase().includes(term);
-                if(match) {
-                    renderCard(land, container);
-                    if(markers[land.id]) markers[land.id].addTo(map);
-                } else {
-                    if(markers[land.id]) map.removeLayer(markers[land.id]);
-                }
-            });
-        });
-
-        // --- DETAIL PANEL & SHARE LOGIC ---
-        let currentImgs = []; let idx = 0; let currentId = null;
-
-        window.openDetail = (data) => {
-            currentId = data.id;
-            currentImgs = data.imageUrls; idx = 0;
-            document.getElementById('detailImg').src = currentImgs[0];
-            
-            document.getElementById('detailTitle').innerText = data.title;
-            document.getElementById('detailLocation').innerText = "📍 " + data.location;
-            document.getElementById('detailPerches').innerText = data.perches + " P";
-            document.getElementById('detailPrice').innerText = data.pricePerPerch;
-            document.getElementById('detailDesc').innerText = data.description || "No description.";
-            
-            // Update URL (Sharing Magic)
-            const newUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`;
-            window.history.pushState({id: data.id}, '', newUrl);
-            document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Interested in: ${newUrl}`;
-
-            // Open Panel
-            document.getElementById('detail-panel').classList.add('open');
-            
-            // Map Logic
-            map.flyTo([data.lat, data.lng], 15);
-            calcDistance(data.lat, data.lng);
-
-            // Mobile: Hide List to show map
-            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('minimized');
-        };
-
-        window.closeDetail = () => {
-            document.getElementById('detail-panel').classList.remove('open');
-            window.history.pushState({}, '', window.location.pathname); // Clean URL
-            nearbyLayer.clearLayers();
-            map.setZoom(9);
-            if(window.innerWidth < 768) document.getElementById('sidebar').classList.remove('minimized');
-        };
-
-        window.shareLink = () => {
-            const url = window.location.href;
-            navigator.clipboard.writeText(url).then(() => alert("Link Copied! Send it to anyone. 🔗"));
-        };
-
-        window.slide = (n) => {
-            idx += n;
-            if(idx >= currentImgs.length) idx = 0; if(idx < 0) idx = currentImgs.length - 1;
-            document.getElementById('detailImg').src = currentImgs[idx];
-        };
-
-        window.toggleMobileView = () => {
-            const sb = document.getElementById('sidebar');
-            sb.classList.toggle('minimized');
-        }
-
+        // --- BEAUTIFUL NEARBY MARKERS ---
         async function calcDistance(lat, lng) {
             nearbyLayer.clearLayers();
             const list = document.getElementById('nearbyList');
-            list.innerHTML = "Calculating...";
+            list.innerHTML = "<span class='animate-pulse text-green-600'>Scanning area...</span>";
             
             const query = `[out:json];(node["amenity"~"school|hospital"](around:2000,${lat},${lng});node["shop"="supermarket"](around:2000,${lat},${lng}););out body;`;
             try {
                 const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
                 const data = await res.json();
                 list.innerHTML = "";
-                if(data.elements.length === 0) list.innerHTML = "No major landmarks within 2km.";
+                if(data.elements.length === 0) list.innerHTML = "No major spots nearby.";
 
                 data.elements.forEach(el => {
                     const d = map.distance([lat, lng], [el.lat, el.lon]);
                     const distTxt = d > 1000 ? (d/1000).toFixed(1)+"km" : Math.round(d)+"m";
-                    let icon = '📍'; 
-                    if(el.tags.amenity == 'school') icon='🎓';
-                    if(el.tags.amenity == 'hospital') icon='🏥';
-                    if(el.tags.shop == 'supermarket') icon='🛒';
-
-                    list.innerHTML += `<div class="flex justify-between py-1 border-b border-slate-50"><span>${icon} ${el.tags.name||'Place'}</span><span class="font-bold text-slate-800">${distTxt}</span></div>`;
                     
-                    L.marker([el.lat, el.lon], {icon: L.divIcon({className:'', html:`<div style="background:white; padding:2px; border-radius:4px; font-size:10px; border:1px solid gray;">${icon} ${distTxt}</div>`})}).addTo(nearbyLayer);
+                    let typeClass = 'marker-shop'; let icon = '🛒';
+                    if(el.tags.amenity == 'school') { typeClass = 'marker-school'; icon='🎓'; }
+                    if(el.tags.amenity == 'hospital') { typeClass = 'marker-hospital'; icon='🏥'; }
+
+                    // Add to Sidebar List
+                    list.innerHTML += `<div class="flex justify-between py-2 border-b border-slate-50 items-center">
+                        <span class="flex items-center gap-2"><span class="text-lg">${icon}</span> ${el.tags.name||'Shop'}</span>
+                        <span class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-xs">${distTxt}</span>
+                    </div>`;
+                    
+                    // Add BEAUTIFUL Marker to Map
+                    const customIcon = L.divIcon({
+                        className: `amenity-marker ${typeClass}`,
+                        html: icon,
+                        iconSize: [36, 36],
+                        iconAnchor: [18, 18]
+                    });
+                    
+                    L.marker([el.lat, el.lon], {icon: customIcon}).addTo(nearbyLayer)
+                     .bindPopup(`<b class="text-sm">${el.tags.name}</b><br>${distTxt} away`);
                 });
             } catch(e) { console.log(e); }
         }
+
+        // Detail Panel Logic
+        let currentImgs = []; let idx = 0;
+        window.openDetail = (data) => {
+            currentImgs = data.imageUrls; idx = 0;
+            document.getElementById('detailImg').src = currentImgs[0];
+            document.getElementById('detailTitle').innerText = data.title;
+            document.getElementById('detailLocation').innerText = "📍 " + data.location;
+            document.getElementById('detailPerches').innerText = data.perches + " P";
+            document.getElementById('detailPrice').innerText = data.pricePerPerch;
+            document.getElementById('detailDesc').innerText = data.description;
+            
+            const badge = document.getElementById('detailBadge');
+            const isSold = data.status === 'sold';
+            badge.innerText = isSold ? 'SOLD OUT' : 'AVAILABLE';
+            badge.className = `absolute bottom-4 left-4 px-3 py-1 rounded-md text-[10px] font-extrabold uppercase text-white shadow-lg ${isSold ? 'bg-red-600' : 'bg-green-600'}`;
+
+            const shareUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`;
+            window.history.pushState({id: data.id}, '', shareUrl);
+            document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Interested: ${shareUrl}`;
+
+            document.getElementById('detail-panel').classList.add('open');
+            map.flyTo([data.lat, data.lng], 15);
+            calcDistance(data.lat, data.lng);
+
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('minimized');
+        };
+
+        window.closeDetail = () => {
+            document.getElementById('detail-panel').classList.remove('open');
+            window.history.pushState({}, '', window.location.pathname);
+            nearbyLayer.clearLayers();
+            map.setZoom(10);
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.remove('minimized');
+        };
+
+        window.shareLink = () => { navigator.clipboard.writeText(window.location.href).then(() => alert("Link Copied! 🔗")); };
+        window.slide = (n) => { idx += n; if(idx >= currentImgs.length) idx = 0; if(idx < 0) idx = currentImgs.length - 1; document.getElementById('detailImg').src = currentImgs[idx]; };
+        window.toggleMobile = () => { document.getElementById('sidebar').classList.toggle('minimized'); };
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const listDiv = document.getElementById('landList'); listDiv.innerHTML = '';
+            landsData.forEach(l => {
+                if(l.location.toLowerCase().includes(term) || l.title.toLowerCase().includes(term)) {
+                    renderCard(l, listDiv);
+                    if(markers[l.id]) markers[l.id].addTo(map);
+                } else { if(markers[l.id]) map.removeLayer(markers[l.id]); }
+            });
+        });
 
         loadLands();
     </script>
