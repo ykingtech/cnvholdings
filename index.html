@@ -3,200 +3,280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prime Lands - Sri Lanka</title>
-    
+    <title>Prime Lands Sri Lanka</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Noto+Sans+Sinhala:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', 'Noto Sans Sinhala', sans-serif; }
-        #map { height: 400px; width: 100%; border-radius: 1rem; z-index: 0; }
-        .hidden-section { display: none; }
+        body { font-family: 'Plus Jakarta Sans', 'Noto Sans Sinhala', sans-serif; overflow: hidden; }
+        
+        /* Layouts */
+        .sidebar { width: 400px; height: 100vh; overflow-y: auto; background: white; z-index: 20; position: relative; box-shadow: 5px 0 20px rgba(0,0,0,0.05); }
+        .map-wrapper { flex: 1; height: 100vh; position: relative; }
+        #map { width: 100%; height: 100%; }
+
+        /* Detail Panel Slide */
+        #detail-panel {
+            position: absolute; top: 0; left: 0; width: 400px; height: 100vh;
+            background: white; z-index: 30; transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+        }
+        #detail-panel.open { transform: translateX(0); }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; position: absolute; bottom: 0; height: 45vh; top: auto; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
+            .sidebar.minimized { transform: translateY(100%); }
+            #detail-panel { width: 100%; z-index: 50; }
+            .map-wrapper { height: 100vh; width: 100%; position: absolute; }
+        }
+
+        /* Custom Scroll */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-50 flex flex-col md:flex-row h-screen">
 
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-            <span class="font-bold text-xl text-green-800">Land Sales LK</span>
-            <a href="tel:+94725486676" class="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold">
-                📞 +94 72 548 6676
-            </a>
+    <div id="sidebar" class="sidebar flex flex-col">
+        <div class="p-6 bg-white/95 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-100">
+            <h1 class="text-2xl font-extrabold text-slate-900 mb-4">Find Your Land 🏡</h1>
+            
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search city (e.g. Kottawa)..." 
+                       class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-green-500 transition">
+                <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
+            </div>
         </div>
-    </header>
 
-    <div id="single-land-view" class="max-w-4xl mx-auto px-4 py-10 hidden-section">
-        <button onclick="showAllLands()" class="mb-4 text-green-600 font-bold flex items-center gap-2">
-            ← සියලු ඉඩම් බැලීමට
-        </button>
-        <div id="single-land-content"></div>
+        <div id="landList" class="p-4 space-y-4 flex-1">
+            </div>
     </div>
 
-    <main id="main-view" class="max-w-7xl mx-auto px-4 py-8">
-        
-        <div class="mb-12 shadow-xl border border-gray-200 rounded-2xl p-2 bg-white">
-            <div id="map"></div>
-            <p class="text-center text-sm text-gray-500 mt-2">සියලුම විකිණීමට ඇති ඉඩම් සිතියමේ ලකුණු කර ඇත.</p>
+    <div id="detail-panel" class="shadow-2xl">
+        <div class="p-4 flex items-center justify-between border-b bg-white z-10">
+            <button onclick="closeDetail()" class="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-bold text-sm">
+                ← Back to List
+            </button>
+            <button onclick="shareLink()" class="bg-slate-100 p-2 rounded-full hover:bg-green-50 text-slate-600 hover:text-green-600 transition" title="Copy Link">
+                🔗 Share
+            </button>
         </div>
 
-        <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">අපගේ ඉඩම් ව්‍යාපෘති</h2>
-        
-        <div id="loader" class="flex justify-center py-20">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <div class="h-64 bg-slate-200 relative group flex-shrink-0">
+            <img id="detailImg" src="" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+            <button onclick="slide(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/30 text-white p-2 rounded-full hover:bg-white/50 backdrop-blur-sm">❮</button>
+            <button onclick="slide(1)" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/30 text-white p-2 rounded-full hover:bg-white/50 backdrop-blur-sm">❯</button>
+            <span id="detailBadge" class="absolute bottom-4 left-4 px-3 py-1 rounded text-xs font-bold uppercase text-white bg-green-600">Available</span>
         </div>
 
-        <div id="land-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-    </main>
+        <div class="flex-1 overflow-y-auto p-6">
+            <h2 id="detailTitle" class="text-2xl font-bold text-slate-900 leading-tight mb-1"></h2>
+            <p id="detailLocation" class="text-green-600 font-bold mb-6 flex items-center gap-1">📍 Location</p>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                    <p class="text-[10px] uppercase text-slate-400 font-bold">Extent</p>
+                    <p id="detailPerches" class="font-bold text-slate-800 text-lg"></p>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                    <p class="text-[10px] uppercase text-slate-400 font-bold">Price/Perch</p>
+                    <p id="detailPrice" class="font-bold text-green-600 text-lg"></p>
+                </div>
+            </div>
+
+            <h3 class="font-bold text-slate-800 mb-2">Description</h3>
+            <p id="detailDesc" class="text-slate-600 text-sm leading-relaxed whitespace-pre-line mb-6"></p>
+
+            <h3 class="font-bold text-slate-800 mb-2">Nearby (Calculated)</h3>
+            <div id="nearbyList" class="text-sm text-slate-500 italic mb-6">Calculating...</div>
+        </div>
+
+        <div class="p-4 border-t bg-white grid grid-cols-2 gap-3">
+            <a id="waBtn" href="#" target="_blank" class="bg-[#25D366] text-white py-3 rounded-xl font-bold text-center hover:bg-[#20bd5a] flex items-center justify-center gap-2">
+                WhatsApp
+            </a>
+            <a href="tel:+94725486676" class="bg-slate-900 text-white py-3 rounded-xl font-bold text-center hover:bg-slate-800 flex items-center justify-center gap-2">
+                📞 Call
+            </a>
+        </div>
+    </div>
+
+    <div class="map-wrapper">
+        <div id="map"></div>
+        
+        <button onclick="toggleMobileView()" class="md:hidden absolute bottom-6 right-6 z-[400] bg-slate-900 text-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2">
+            🗺️ Toggle Map/List
+        </button>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA30v8yswbyqF-oB29C7DXPWpKwCQscs5o",
-            authDomain: "land-425be.firebaseapp.com",
-            projectId: "land-425be",
-            storageBucket: "land-425be.firebasestorage.app",
-            messagingSenderId: "1053755182230",
-            appId: "1:1053755182230:web:9596bee1de56a3c63e86b7",
-            measurementId: "G-DQVYCKN9KY"
-        };
-
+        const firebaseConfig = { apiKey: "AIzaSyA30v8yswbyqF-oB29C7DXPWpKwCQscs5o", authDomain: "land-425be.firebaseapp.com", projectId: "land-425be", storageBucket: "land-425be.firebasestorage.app", messagingSenderId: "1053755182230", appId: "1:1053755182230:web:9596bee1de56a3c63e86b7", measurementId: "G-DQVYCKN9KY" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Map Setup
-        let map = L.map('map').setView([7.8731, 80.7718], 7); // Center of Sri Lanka
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        // Map
+        const map = L.map('map', { zoomControl: false }).setView([6.9271, 79.8612], 9);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.control.zoom({ position: 'topright' }).addTo(map);
 
-        const container = document.getElementById('land-container');
-        const loader = document.getElementById('loader');
-        const mainView = document.getElementById('main-view');
-        const singleView = document.getElementById('single-land-view');
-        const singleContent = document.getElementById('single-land-content');
+        let landsData = [];
+        let markers = {};
+        let nearbyLayer = L.layerGroup().addTo(map);
 
-        // Check URL for ID (Share Link Logic)
-        const urlParams = new URLSearchParams(window.location.search);
-        const sharedLandId = urlParams.get('id');
-
-        if (sharedLandId) {
-            loadSingleLand(sharedLandId);
-        } else {
-            loadLands();
-        }
-
-        // --- Function 1: Load All Lands & Map ---
+        // Fetch Lands
         async function loadLands() {
-            try {
-                const querySnapshot = await getDocs(collection(db, "lands"));
-                loader.classList.add('hidden');
-                
-                if (querySnapshot.empty) {
-                    container.innerHTML = '<p class="text-gray-500">තවම ඉඩම් ඇතුලත් කර නැත.</p>';
-                    return;
-                }
-
-                querySnapshot.forEach((doc) => {
-                    const land = doc.data();
-                    const id = doc.id;
-                    
-                    // Add to Grid
-                    renderCard(land, id, container);
-
-                    // Add to Map
-                    if(land.lat && land.lng) {
-                        const marker = L.marker([land.lat, land.lng]).addTo(map);
-                        marker.bindPopup(`<b>${land.title}</b><br>Rs. ${land.pricePerPerch}/PP<br><a href="?id=${id}" class="text-blue-600 underline">View Details</a>`);
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error:", error);
-            }
-        }
-
-        // --- Function 2: Load Single Land (Shared Link) ---
-        async function loadSingleLand(id) {
-            mainView.classList.add('hidden-section');
-            singleView.classList.remove('hidden-section');
+            const snap = await getDocs(collection(db, "lands"));
+            const listDiv = document.getElementById('landList');
             
-            try {
-                const docRef = doc(db, "lands", id);
-                const docSnap = await getDoc(docRef);
+            snap.forEach(doc => {
+                const data = doc.data(); data.id = doc.id;
+                if(!data.imageUrls) data.imageUrls = [data.imageUrl];
+                landsData.push(data);
+                
+                renderCard(data, listDiv);
+                addMarker(data);
+            });
 
-                if (docSnap.exists()) {
-                    const land = docSnap.data();
-                    renderCard(land, id, singleContent, true); // true = full width mode
-                } else {
-                    singleContent.innerHTML = "<p class='text-red-500'>කණගාටුයි, මෙම ඉඩම සොයාගත නොහැක.</p>";
-                }
-            } catch (error) {
-                console.error("Error:", error);
+            // Check URL for Share ID
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedId = urlParams.get('id');
+            if(sharedId) {
+                const land = landsData.find(l => l.id === sharedId);
+                if(land) openDetail(land);
             }
         }
 
-        // --- HTML Generator Function ---
-        function renderCard(data, id, targetElement, isFullWidth = false) {
-            const isSold = data.status === 'sold';
-            const badgeColor = isSold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
-            const shareLink = `${window.location.origin}${window.location.pathname}?id=${id}`;
-
-            const html = `
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden flex flex-col ${isFullWidth ? 'max-w-3xl mx-auto' : ''}">
-                    
-                    <div class="relative ${isFullWidth ? 'h-96' : 'h-56'}">
-                        <img src="${data.imageUrl}" class="w-full h-full object-cover" alt="${data.title}">
-                        <div class="absolute top-4 right-4">
-                            <span class="${badgeColor} text-xs font-bold px-3 py-1 rounded-full uppercase shadow-sm">
-                                ${isSold ? 'විකිණී ඇත' : 'විකිණීමට ඇත'}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="p-6 flex-1 flex flex-col">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">${data.title}</h3>
-                        <p class="text-gray-500 mb-4 flex items-center gap-1">📍 ${data.location}</p>
-
-                        <div class="flex justify-between bg-gray-50 p-4 rounded-xl mb-6">
-                            <div><p class="text-xs text-gray-500">පර්චස්</p><p class="font-bold">${data.perches} P</p></div>
-                            <div class="text-right"><p class="text-xs text-gray-500">පර්චසයක්</p><p class="font-bold text-green-700 text-lg">Rs. ${data.pricePerPerch}</p></div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3 mt-auto">
-                            <a href="https://wa.me/94725486676?text=මට මේ ඉඩම ගැන විස්තර දැනගන්න ඕන: ${shareLink}" 
-                               target="_blank" class="bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-                                WhatsApp
-                            </a>
-                            <a href="tel:+94725486676" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition">
-                                📞 Call
-                            </a>
-                        </div>
-                        
-                        <div class="mt-3">
-                             <button onclick="navigator.clipboard.writeText('${shareLink}').then(() => alert('Link Copied!'))" 
-                                class="w-full border border-gray-300 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-100 flex items-center justify-center gap-2">
-                                🔗 Share Link (Copy)
-                             </button>
-                        </div>
-                    </div>
+        function renderCard(data, container) {
+            const div = document.createElement('div');
+            div.className = "bg-white p-3 rounded-2xl border border-slate-100 hover:shadow-lg transition cursor-pointer flex gap-3 group";
+            div.innerHTML = `
+                <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0">
+                    <img src="${data.imageUrls[0]}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                </div>
+                <div class="flex-1 flex flex-col justify-center">
+                    <h3 class="font-bold text-slate-800 leading-tight mb-1">${data.title}</h3>
+                    <p class="text-xs text-slate-500 mb-2">📍 ${data.location}</p>
+                    <p class="text-green-600 font-bold text-sm">Rs. ${data.pricePerPerch}/P</p>
                 </div>
             `;
-            targetElement.insertAdjacentHTML('beforeend', html);
+            div.onclick = () => openDetail(data);
+            container.appendChild(div);
         }
 
-        // Global function for Back Button
-        window.showAllLands = () => {
-            singleView.classList.add('hidden-section');
-            mainView.classList.remove('hidden-section');
-            // Remove ?id= from URL without refresh
-            window.history.pushState({}, document.title, window.location.pathname);
+        function addMarker(data) {
+            if(data.lat) {
+                const marker = L.marker([data.lat, data.lng]).addTo(map);
+                marker.on('click', () => openDetail(data));
+                markers[data.id] = marker;
+            }
         }
+
+        // --- SEARCH ---
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const container = document.getElementById('landList');
+            container.innerHTML = '';
+
+            landsData.forEach(land => {
+                const match = land.location.toLowerCase().includes(term) || land.title.toLowerCase().includes(term);
+                if(match) {
+                    renderCard(land, container);
+                    if(markers[land.id]) markers[land.id].addTo(map);
+                } else {
+                    if(markers[land.id]) map.removeLayer(markers[land.id]);
+                }
+            });
+        });
+
+        // --- DETAIL PANEL & SHARE LOGIC ---
+        let currentImgs = []; let idx = 0; let currentId = null;
+
+        window.openDetail = (data) => {
+            currentId = data.id;
+            currentImgs = data.imageUrls; idx = 0;
+            document.getElementById('detailImg').src = currentImgs[0];
+            
+            document.getElementById('detailTitle').innerText = data.title;
+            document.getElementById('detailLocation').innerText = "📍 " + data.location;
+            document.getElementById('detailPerches').innerText = data.perches + " P";
+            document.getElementById('detailPrice').innerText = data.pricePerPerch;
+            document.getElementById('detailDesc').innerText = data.description || "No description.";
+            
+            // Update URL (Sharing Magic)
+            const newUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`;
+            window.history.pushState({id: data.id}, '', newUrl);
+            document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Interested in: ${newUrl}`;
+
+            // Open Panel
+            document.getElementById('detail-panel').classList.add('open');
+            
+            // Map Logic
+            map.flyTo([data.lat, data.lng], 15);
+            calcDistance(data.lat, data.lng);
+
+            // Mobile: Hide List to show map
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('minimized');
+        };
+
+        window.closeDetail = () => {
+            document.getElementById('detail-panel').classList.remove('open');
+            window.history.pushState({}, '', window.location.pathname); // Clean URL
+            nearbyLayer.clearLayers();
+            map.setZoom(9);
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.remove('minimized');
+        };
+
+        window.shareLink = () => {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => alert("Link Copied! Send it to anyone. 🔗"));
+        };
+
+        window.slide = (n) => {
+            idx += n;
+            if(idx >= currentImgs.length) idx = 0; if(idx < 0) idx = currentImgs.length - 1;
+            document.getElementById('detailImg').src = currentImgs[idx];
+        };
+
+        window.toggleMobileView = () => {
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('minimized');
+        }
+
+        async function calcDistance(lat, lng) {
+            nearbyLayer.clearLayers();
+            const list = document.getElementById('nearbyList');
+            list.innerHTML = "Calculating...";
+            
+            const query = `[out:json];(node["amenity"~"school|hospital"](around:2000,${lat},${lng});node["shop"="supermarket"](around:2000,${lat},${lng}););out body;`;
+            try {
+                const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                list.innerHTML = "";
+                if(data.elements.length === 0) list.innerHTML = "No major landmarks within 2km.";
+
+                data.elements.forEach(el => {
+                    const d = map.distance([lat, lng], [el.lat, el.lon]);
+                    const distTxt = d > 1000 ? (d/1000).toFixed(1)+"km" : Math.round(d)+"m";
+                    let icon = '📍'; 
+                    if(el.tags.amenity == 'school') icon='🎓';
+                    if(el.tags.amenity == 'hospital') icon='🏥';
+                    if(el.tags.shop == 'supermarket') icon='🛒';
+
+                    list.innerHTML += `<div class="flex justify-between py-1 border-b border-slate-50"><span>${icon} ${el.tags.name||'Place'}</span><span class="font-bold text-slate-800">${distTxt}</span></div>`;
+                    
+                    L.marker([el.lat, el.lon], {icon: L.divIcon({className:'', html:`<div style="background:white; padding:2px; border-radius:4px; font-size:10px; border:1px solid gray;">${icon} ${distTxt}</div>`})}).addTo(nearbyLayer);
+                });
+            } catch(e) { console.log(e); }
+        }
+
+        loadLands();
     </script>
 </body>
 </html>
