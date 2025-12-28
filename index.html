@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prime Lands - Sri Lanka</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', 'Noto Sans Sinhala', sans-serif; }
+        #map { height: 400px; width: 100%; border-radius: 1rem; z-index: 0; }
+        .hidden-section { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+            <span class="font-bold text-xl text-green-800">Land Sales LK</span>
+            <a href="tel:+94725486676" class="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold">
+                📞 +94 72 548 6676
+            </a>
+        </div>
+    </header>
+
+    <div id="single-land-view" class="max-w-4xl mx-auto px-4 py-10 hidden-section">
+        <button onclick="showAllLands()" class="mb-4 text-green-600 font-bold flex items-center gap-2">
+            ← සියලු ඉඩම් බැලීමට
+        </button>
+        <div id="single-land-content"></div>
+    </div>
+
+    <main id="main-view" class="max-w-7xl mx-auto px-4 py-8">
+        
+        <div class="mb-12 shadow-xl border border-gray-200 rounded-2xl p-2 bg-white">
+            <div id="map"></div>
+            <p class="text-center text-sm text-gray-500 mt-2">සියලුම විකිණීමට ඇති ඉඩම් සිතියමේ ලකුණු කර ඇත.</p>
+        </div>
+
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">අපගේ ඉඩම් ව්‍යාපෘති</h2>
+        
+        <div id="loader" class="flex justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        </div>
+
+        <div id="land-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA30v8yswbyqF-oB29C7DXPWpKwCQscs5o",
+            authDomain: "land-425be.firebaseapp.com",
+            projectId: "land-425be",
+            storageBucket: "land-425be.firebasestorage.app",
+            messagingSenderId: "1053755182230",
+            appId: "1:1053755182230:web:9596bee1de56a3c63e86b7",
+            measurementId: "G-DQVYCKN9KY"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Map Setup
+        let map = L.map('map').setView([7.8731, 80.7718], 7); // Center of Sri Lanka
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const container = document.getElementById('land-container');
+        const loader = document.getElementById('loader');
+        const mainView = document.getElementById('main-view');
+        const singleView = document.getElementById('single-land-view');
+        const singleContent = document.getElementById('single-land-content');
+
+        // Check URL for ID (Share Link Logic)
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedLandId = urlParams.get('id');
+
+        if (sharedLandId) {
+            loadSingleLand(sharedLandId);
+        } else {
+            loadLands();
+        }
+
+        // --- Function 1: Load All Lands & Map ---
+        async function loadLands() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "lands"));
+                loader.classList.add('hidden');
+                
+                if (querySnapshot.empty) {
+                    container.innerHTML = '<p class="text-gray-500">තවම ඉඩම් ඇතුලත් කර නැත.</p>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const land = doc.data();
+                    const id = doc.id;
+                    
+                    // Add to Grid
+                    renderCard(land, id, container);
+
+                    // Add to Map
+                    if(land.lat && land.lng) {
+                        const marker = L.marker([land.lat, land.lng]).addTo(map);
+                        marker.bindPopup(`<b>${land.title}</b><br>Rs. ${land.pricePerPerch}/PP<br><a href="?id=${id}" class="text-blue-600 underline">View Details</a>`);
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
+        // --- Function 2: Load Single Land (Shared Link) ---
+        async function loadSingleLand(id) {
+            mainView.classList.add('hidden-section');
+            singleView.classList.remove('hidden-section');
+            
+            try {
+                const docRef = doc(db, "lands", id);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const land = docSnap.data();
+                    renderCard(land, id, singleContent, true); // true = full width mode
+                } else {
+                    singleContent.innerHTML = "<p class='text-red-500'>කණගාටුයි, මෙම ඉඩම සොයාගත නොහැක.</p>";
+                }
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
+        // --- HTML Generator Function ---
+        function renderCard(data, id, targetElement, isFullWidth = false) {
+            const isSold = data.status === 'sold';
+            const badgeColor = isSold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+            const shareLink = `${window.location.origin}${window.location.pathname}?id=${id}`;
+
+            const html = `
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden flex flex-col ${isFullWidth ? 'max-w-3xl mx-auto' : ''}">
+                    
+                    <div class="relative ${isFullWidth ? 'h-96' : 'h-56'}">
+                        <img src="${data.imageUrl}" class="w-full h-full object-cover" alt="${data.title}">
+                        <div class="absolute top-4 right-4">
+                            <span class="${badgeColor} text-xs font-bold px-3 py-1 rounded-full uppercase shadow-sm">
+                                ${isSold ? 'විකිණී ඇත' : 'විකිණීමට ඇත'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">${data.title}</h3>
+                        <p class="text-gray-500 mb-4 flex items-center gap-1">📍 ${data.location}</p>
+
+                        <div class="flex justify-between bg-gray-50 p-4 rounded-xl mb-6">
+                            <div><p class="text-xs text-gray-500">පර්චස්</p><p class="font-bold">${data.perches} P</p></div>
+                            <div class="text-right"><p class="text-xs text-gray-500">පර්චසයක්</p><p class="font-bold text-green-700 text-lg">Rs. ${data.pricePerPerch}</p></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mt-auto">
+                            <a href="https://wa.me/94725486676?text=මට මේ ඉඩම ගැන විස්තර දැනගන්න ඕන: ${shareLink}" 
+                               target="_blank" class="bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                                WhatsApp
+                            </a>
+                            <a href="tel:+94725486676" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition">
+                                📞 Call
+                            </a>
+                        </div>
+                        
+                        <div class="mt-3">
+                             <button onclick="navigator.clipboard.writeText('${shareLink}').then(() => alert('Link Copied!'))" 
+                                class="w-full border border-gray-300 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-100 flex items-center justify-center gap-2">
+                                🔗 Share Link (Copy)
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            targetElement.insertAdjacentHTML('beforeend', html);
+        }
+
+        // Global function for Back Button
+        window.showAllLands = () => {
+            singleView.classList.add('hidden-section');
+            mainView.classList.remove('hidden-section');
+            // Remove ?id= from URL without refresh
+            window.history.pushState({}, document.title, window.location.pathname);
+        }
+    </script>
+</body>
+</html>
