@@ -3,95 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Land Sales</title>
+    <title>Nexus Admin | Manage & Add</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { background: #f8fafc; font-family: sans-serif; }
+        #map { height: 350px; width: 100%; border-radius: 1rem; border: 2px solid #cbd5e1; }
+        .glass-panel { background: white; border: 1px solid #e2e8f0; border-radius: 1.5rem; }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
+<body class="p-6 md:p-12 max-w-7xl mx-auto">
 
-    <div id="login-section" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg mt-10">
-        <h2 class="text-2xl font-bold mb-4">Admin Login</h2>
-        <input type="email" id="email" placeholder="Email" class="w-full p-2 border rounded mb-2">
-        <input type="password" id="password" placeholder="Password" class="w-full p-2 border rounded mb-4">
-        <button id="loginBtn" class="w-full bg-green-600 text-white p-2 rounded">Login</button>
-    </div>
+    <header class="flex justify-between items-center mb-10">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800">Admin Dashboard 🛠️</h1>
+            <p class="text-slate-500 text-sm">Sold lands auto-delete after 3 days.</p>
+        </div>
+        <div id="statusMsg" class="text-sm font-bold text-green-600"></div>
+    </header>
 
-    <div id="dashboard-section" class="hidden max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg mt-10">
-        <div class="flex justify-between mb-6">
-            <h1 class="text-2xl font-bold">ඉඩම් ඇතුලත් කිරීම</h1>
-            <button id="logoutBtn" class="text-red-500 underline">Logout</button>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        
+        <div class="glass-panel p-8 shadow-xl h-fit">
+            <h2 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">➕ Add New Property</h2>
+            
+            <form id="addLandForm" class="space-y-4">
+                <input type="text" id="landTitle" placeholder="Title (e.g. Land in Malabe)" class="w-full bg-slate-50 p-3 rounded-xl border outline-none focus:border-blue-500" required>
+                <input type="text" id="landLocation" placeholder="City" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
+                <div class="flex gap-2">
+                    <input type="number" id="landPerches" placeholder="Perches" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
+                    <input type="text" id="landPrice" placeholder="Price/Perch" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
+                </div>
+                <textarea id="landDesc" placeholder="Description..." rows="3" class="w-full bg-slate-50 p-3 rounded-xl border outline-none"></textarea>
+                
+                <div id="map"></div>
+                <p class="text-xs text-center text-slate-500">📍 Tap map to pin location</p>
+                <input type="hidden" id="landLat"><input type="hidden" id="landLng">
+
+                <div class="border-2 border-dashed border-slate-300 p-4 rounded-xl text-center cursor-pointer hover:bg-blue-50 transition relative">
+                    <input type="file" id="imageInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <p class="text-blue-600 font-bold">📸 Select Photos</p>
+                    <p id="fileCount" class="text-xs text-slate-400">Max 3 recommended</p>
+                </div>
+
+                <button type="submit" id="saveBtn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition">
+                    Publish Property
+                </button>
+            </form>
         </div>
 
-        <form id="addLandForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" id="landTitle" placeholder="Title (මාතෘකාව)" class="p-2 border rounded" required>
-            <input type="text" id="landLocation" placeholder="Location Name (Ex: Malabe)" class="p-2 border rounded" required>
-            
-            <div class="md:col-span-2 bg-blue-50 p-4 rounded-lg">
-                <p class="text-sm font-bold text-blue-800 mb-2">Google Map Coordinates (මැප් එකේ ලකුණු කිරීමට)</p>
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="landLat" placeholder="Latitude (Ex: 6.9012)" class="p-2 border rounded" required>
-                    <input type="text" id="landLng" placeholder="Longitude (Ex: 79.8823)" class="p-2 border rounded" required>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">Tip: Google Maps වල ඉඩම උඩ Right Click කරලා පළමු ඉලක්කම් දෙක Copy කරගන්න.</p>
+        <div class="glass-panel p-8 shadow-xl">
+            <h2 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">⚙️ Manage Listings</h2>
+            <div id="manageList" class="space-y-4 max-h-[800px] overflow-y-auto pr-2">
+                <p class="text-slate-400 text-center py-10">Loading current lands...</p>
             </div>
+        </div>
 
-            <input type="number" step="0.01" id="landPerches" placeholder="Perches" class="p-2 border rounded" required>
-            <input type="text" id="landPrice" placeholder="Price Per Perch" class="p-2 border rounded" required>
-            <select id="landStatus" class="p-2 border rounded">
-                <option value="available">Available</option>
-                <option value="sold">Sold</option>
-            </select>
-            <input type="url" id="landImage" placeholder="Image URL" class="p-2 border rounded md:col-span-2" required>
-            
-            <button type="submit" class="bg-green-600 text-white p-3 rounded md:col-span-2 font-bold">Save Land</button>
-        </form>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyA30v8yswbyqF-oB29C7DXPWpKwCQscs5o", authDomain: "land-425be.firebaseapp.com", projectId: "land-425be", storageBucket: "land-425be.firebasestorage.app", messagingSenderId: "1053755182230", appId: "1:1053755182230:web:9596bee1de56a3c63e86b7", measurementId: "G-DQVYCKN9KY" };
-
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Auth Logic (Login/Logout) - Same as before
-        const loginSection = document.getElementById('login-section');
-        const dashboardSection = document.getElementById('dashboard-section');
-
-        onAuthStateChanged(auth, user => {
-            if (user) { loginSection.classList.add('hidden'); dashboardSection.classList.remove('hidden'); }
-            else { loginSection.classList.remove('hidden'); dashboardSection.classList.add('hidden'); }
+        // Map Setup
+        const map = L.map('map').setView([6.9271, 79.8612], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        let marker;
+        map.on('click', (e) => {
+            if(marker) map.removeLayer(marker);
+            marker = L.marker(e.latlng).addTo(map);
+            document.getElementById('landLat').value = e.latlng.lat;
+            document.getElementById('landLng').value = e.latlng.lng;
         });
 
-        document.getElementById('loginBtn').addEventListener('click', () => {
-            signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value)
-                .catch(e => alert(e.message));
+        // 1. Image Compression
+        const compressImage = (file) => new Promise((resolve) => {
+            const reader = new FileReader(); reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const scale = 800 / img.width;
+                    canvas.width = 800; canvas.height = img.height * scale;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.6));
+                };
+            };
         });
 
-        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+        // 2. Fetch & Clean Old Data
+        async function fetchAndCleanLands() {
+            const listDiv = document.getElementById('manageList');
+            listDiv.innerHTML = '';
+            
+            const snap = await getDocs(collection(db, "lands"));
+            const now = new Date();
+            let deletedCount = 0;
 
-        // Add Data Logic
+            snap.forEach(async (d) => {
+                const data = d.data();
+                const id = d.id;
+
+                // --- AUTO DELETE LOGIC (3 Days) ---
+                if (data.status === 'sold' && data.soldAt) {
+                    const soldDate = new Date(data.soldAt.seconds ? data.soldAt.seconds * 1000 : data.soldAt); // Handle Firestore Timestamp
+                    const diffTime = Math.abs(now - soldDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+                    if (diffDays > 3) {
+                        await deleteDoc(doc(db, "lands", id));
+                        deletedCount++;
+                        return; // Don't show in list
+                    }
+                }
+
+                // --- RENDER LIST ---
+                const isSold = data.status === 'sold';
+                const el = document.createElement('div');
+                el.className = `flex justify-between items-center p-4 rounded-xl border ${isSold ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'}`;
+                el.innerHTML = `
+                    <div class="flex gap-3 items-center">
+                        <img src="${data.imageUrls ? data.imageUrls[0] : data.imageUrl}" class="w-12 h-12 rounded-lg object-cover">
+                        <div>
+                            <p class="font-bold text-slate-800">${data.title}</p>
+                            <p class="text-xs ${isSold ? 'text-red-500 font-bold' : 'text-green-600 font-bold'}">${isSold ? 'SOLD OUT' : 'AVAILABLE'}</p>
+                        </div>
+                    </div>
+                    ${!isSold ? `<button onclick="markSold('${id}')" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-200">Mark Sold</button>` : `<span class="text-xs text-gray-400">Deleting soon</span>`}
+                `;
+                listDiv.appendChild(el);
+            });
+
+            if(deletedCount > 0) document.getElementById('statusMsg').innerText = `🧹 Cleaned up ${deletedCount} old sold listings.`;
+        }
+
+        // 3. Mark as Sold Function (Attached to window)
+        window.markSold = async (id) => {
+            if(confirm("Mark this property as SOLD? It will be deleted automatically after 3 days.")) {
+                await updateDoc(doc(db, "lands", id), {
+                    status: 'sold',
+                    soldAt: new Date().toISOString() // Save current time
+                });
+                fetchAndCleanLands(); // Refresh list
+            }
+        };
+
+        // 4. Add New Land
         document.getElementById('addLandForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            const lat = document.getElementById('landLat').value;
+            const files = document.getElementById('imageInput').files;
+
+            if(!lat || files.length === 0) return alert("Location & Photos required!");
+            btn.innerText = "Processing..."; btn.disabled = true;
+
             try {
+                const imageUrls = [];
+                for(let file of files) imageUrls.push(await compressImage(file));
+
                 await addDoc(collection(db, "lands"), {
                     title: document.getElementById('landTitle').value,
                     location: document.getElementById('landLocation').value,
-                    lat: parseFloat(document.getElementById('landLat').value), // Number විදියට save කරනවා
-                    lng: parseFloat(document.getElementById('landLng').value), // Number විදියට save කරනවා
+                    description: document.getElementById('landDesc').value,
                     perches: document.getElementById('landPerches').value,
                     pricePerPerch: document.getElementById('landPrice').value,
-                    status: document.getElementById('landStatus').value,
-                    imageUrl: document.getElementById('landImage').value,
+                    status: 'available', // Default
+                    lat: parseFloat(lat), lng: parseFloat(document.getElementById('landLng').value),
+                    imageUrls: imageUrls, 
                     timestamp: new Date()
                 });
-                alert("Saved!");
-                e.target.reset();
-            } catch (error) { alert("Error: " + error.message); }
+                alert("Published! ✅"); 
+                location.reload();
+            } catch (err) { alert(err.message); btn.disabled = false; }
         });
+
+        document.getElementById('imageInput').addEventListener('change', function() {
+            document.getElementById('fileCount').innerText = `${this.files.length} Photos Selected`;
+        });
+
+        // Initial Load
+        fetchAndCleanLands();
     </script>
 </body>
 </html>
