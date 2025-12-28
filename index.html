@@ -3,157 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNV HOLDINGS</title>
+    <title>CNV Holdings</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Noto+Sans+Sinhala:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&family=Noto+Sans+Sinhala:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Plus Jakarta Sans', 'Noto Sans Sinhala', sans-serif; overflow: hidden; background: #f8fafc; }
+        body { font-family: 'Outfit', 'Noto Sans Sinhala', sans-serif; background: #f8fafc; overflow: hidden; -webkit-tap-highlight-color: transparent; }
         
-        /* Map is always full screen on mobile */
-        .map-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; z-index: 0; }
-        #map { width: 100%; height: 100%; }
-
-        /* LIST PANEL (Bottom Sheet on Mobile, Sidebar on Desktop) */
-        .list-panel {
-            position: absolute; z-index: 20; background: white;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; flex-direction: column;
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease-out;
         }
+        .brand-text { font-size: 2.5rem; font-weight: 900; color: white; letter-spacing: -1px; animation: fadeInUp 1s ease forwards; opacity: 0; transform: translateY(20px); }
+        .sub-text { font-size: 0.8rem; color: #94a3b8; letter-spacing: 2px; margin-top: 10px; animation: fadeInUp 1s ease 0.3s forwards; opacity: 0; transform: translateY(20px); }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* Desktop Style */
-        @media (min-width: 768px) {
-            .list-panel { top: 0; left: 0; width: 400px; height: 100vh; box-shadow: 5px 0 15px rgba(0,0,0,0.05); }
-            .map-wrapper { margin-left: 400px; width: calc(100% - 400px); }
-        }
+        /* Views */
+        .view-section { height: calc(100vh - 70px); width: 100%; display: none; overflow-y: auto; scroll-behavior: smooth; }
+        .view-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Mobile Style (Bottom Sheet) */
-        @media (max-width: 767px) {
-            .list-panel { 
-                bottom: 0; left: 0; width: 100%; height: 40vh; /* Takes 40% of screen */
-                border-radius: 24px 24px 0 0; 
-                box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
-            }
-            .list-panel.minimized { transform: translateY(calc(100% - 60px)); } /* Show only header */
-            .map-wrapper { margin-left: 0; width: 100%; }
-            
-            /* Hide scrollbar in list for clean look */
-            #landList::-webkit-scrollbar { display: none; }
-        }
+        #map { width: 100%; height: 100%; z-index: 1; }
 
-        /* DETAIL PANEL (Slides up) */
-        .detail-panel {
-            position: absolute; z-index: 40; background: white;
-            transition: transform 0.3s ease-out;
-            display: flex; flex-direction: column;
+        /* Detail Overlay */
+        #detail-view {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 100; transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow-y: auto; display: flex; flex-direction: column;
         }
+        #detail-view.open { transform: translateX(0); }
 
-        @media (min-width: 768px) {
-            .detail-panel { top: 0; left: 0; width: 400px; height: 100vh; transform: translateX(-100%); border-right: 1px solid #eee; }
-            .detail-panel.open { transform: translateX(0); }
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            border-top: 1px solid #e2e8f0; display: flex;
+            justify-content: space-around; align-items: center; z-index: 50;
+            padding-bottom: 10px; box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
         }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #94a3b8; font-size: 10px; font-weight: 600; width: 50%; transition: color 0.3s; }
+        .nav-item.active { color: #16a34a; }
+        .nav-item svg { width: 26px; height: 26px; transition: transform 0.2s; }
+        .nav-item.active svg { transform: translateY(-2px); }
 
-        @media (max-width: 767px) {
-            .detail-panel { 
-                bottom: 0; left: 0; width: 100%; height: 85vh; /* Almost full screen */
-                border-radius: 24px 24px 0 0; 
-                transform: translateY(110%);
-                box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
-            }
-            .detail-panel.open { transform: translateY(0); }
+        /* Distance Markers on Map */
+        .dist-marker {
+            background: white; border: 2px solid #3b82f6; border-radius: 30px;
+            padding: 4px 10px; font-size: 11px; font-weight: 700; color: #1e293b;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 6px;
+            white-space: nowrap; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
-        /* Map Markers */
-        .amenity-marker {
-            display: flex; align-items: center; justify-content: center;
-            width: 34px; height: 34px; border-radius: 50%;
-            border: 2px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            font-size: 16px; animation: popIn 0.3s ease;
-        }
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-        .m-school { background: #3b82f6; color: white; }
-        .m-hospital { background: #ef4444; color: white; }
-        .m-shop { background: #f97316; color: white; }
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div class="map-wrapper">
-        <div id="map"></div>
+    <div id="splash-screen">
+        <h1 class="brand-text">CNV <span class="text-green-500">HOLDINGS</span></h1>
+        <p class="sub-text">POWERED BY CNV GROUP</p>
+        <div class="mt-8 w-8 h-8 border-4 border-green-500/30 border-t-green-500 rounded-full animate-spin"></div>
     </div>
 
-    <div id="listPanel" class="list-panel">
-        <div class="md:hidden w-full flex justify-center pt-3 pb-1" onclick="toggleList()">
-            <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
-        </div>
-
-        <div class="px-5 pb-4 pt-2 md:pt-6 bg-white z-10 border-b border-slate-100">
-            <h1 class="hidden md:block text-2xl font-extrabold text-slate-800 mb-4">CNV HOLDINGS 🌴</h1>
-            <div class="relative shadow-sm">
+    <div id="view-list" class="view-section active bg-gray-50">
+        <div class="sticky top-0 bg-white/90 backdrop-blur-xl z-20 px-6 pt-12 pb-4 border-b border-slate-100 shadow-sm">
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">CNV HOLDINGS 🏡</h1>
+            <div class="relative mt-4 shadow-sm">
                 <input type="text" id="searchInput" placeholder="Search city..." 
-                       class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-green-500 text-sm font-medium">
-                <span class="absolute left-3 top-3 text-gray-400">🔍</span>
+                       class="w-full bg-slate-100/50 border-none rounded-2xl py-3.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-green-500/20 focus:bg-white transition text-sm font-semibold text-slate-700">
+                <span class="absolute left-4 top-3.5 text-slate-400 text-lg">🔍</span>
             </div>
         </div>
 
-        <div id="landList" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+        <div id="landList" class="p-5 space-y-4 pb-32">
             </div>
     </div>
 
-    <div id="detailPanel" class="detail-panel">
-        <div class="p-4 flex items-center justify-between border-b border-slate-100 bg-white rounded-t-3xl md:rounded-none">
-            <button onclick="closeDetail()" class="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-bold text-sm bg-slate-100 px-3 py-2 rounded-full">
-                ✕ Close
-            </button>
-            <button onclick="shareLink()" class="bg-green-50 px-3 py-2 rounded-full text-green-600 font-bold text-xs" title="Copy Link">
-                🔗 Share
-            </button>
+    <div id="view-map" class="view-section relative">
+        <div id="map"></div>
+        <div id="mapFloatCard" class="absolute bottom-24 left-4 right-4 bg-white p-3 rounded-2xl shadow-2xl z-[500] hidden flex gap-4 items-center cursor-pointer border-l-4 border-green-500 animate-[slideUp_0.3s_ease]" onclick="openDetailFromMap()">
+            <img id="mapCardImg" class="w-16 h-16 rounded-xl object-cover bg-slate-200">
+            <div class="flex-1 min-w-0">
+                <h3 id="mapCardTitle" class="font-bold text-slate-800 text-sm truncate">Title</h3>
+                <p id="mapCardLocation" class="text-xs text-slate-500 mb-1 truncate">Location</p>
+                <div class="flex justify-between items-center">
+                    <p id="mapCardPrice" class="text-green-600 font-bold text-xs"></p>
+                    <span class="text-[10px] bg-slate-100 px-2 py-1 rounded-full text-slate-500 font-bold">Tap to view →</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="detail-view">
+        <div class="flex justify-between items-center p-4 pt-10 bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-50">
+            <button onclick="closeDetail()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition">✕</button>
+            <h3 class="font-bold text-slate-800 text-sm tracking-wide">DETAILS</h3>
+            <button onclick="shareLink()" class="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">🔗</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto">
-            <div class="h-60 bg-slate-200 relative group">
+        <div class="flex-1 overflow-y-auto bg-white pb-10">
+            <div class="h-80 bg-slate-200 relative group">
                 <img id="detailImg" src="" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <button onclick="slide(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 text-white p-2 rounded-full backdrop-blur">❮</button>
-                <button onclick="slide(1)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 text-white p-2 rounded-full backdrop-blur">❯</button>
-                <span id="detailBadge" class="absolute bottom-4 left-4 px-2 py-1 rounded text-[10px] font-bold uppercase text-white bg-green-600 shadow">Available</span>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 p-6 w-full">
+                    <span id="detailBadge" class="inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase text-white shadow-lg mb-2">Available</span>
+                    <h2 id="detailTitle" class="text-2xl font-bold text-white leading-tight"></h2>
+                </div>
+                <button onclick="slide(-1)" class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 text-white w-10 h-10 flex items-center justify-center rounded-full backdrop-blur-md">❮</button>
+                <button onclick="slide(1)" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 text-white w-10 h-10 flex items-center justify-center rounded-full backdrop-blur-md">❯</button>
             </div>
 
             <div class="p-6">
-                <h2 id="detailTitle" class="text-xl font-bold text-slate-900 leading-tight mb-1"></h2>
-                <p id="detailLocation" class="text-green-600 font-bold mb-6 flex items-center gap-1 text-sm">📍 Location</p>
-
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                        <p class="text-[10px] uppercase text-slate-400 font-bold">Extent</p>
-                        <p id="detailPerches" class="font-bold text-slate-800"></p>
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Price Per Perch</p>
+                         <p id="detailPrice" class="text-3xl font-bold text-green-600"></p>
                     </div>
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                        <p class="text-[10px] uppercase text-slate-400 font-bold">Price/P</p>
-                        <p id="detailPrice" class="font-bold text-green-600"></p>
+                    <div class="text-right">
+                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Size</p>
+                         <p id="detailPerches" class="text-xl font-bold text-slate-800"></p>
                     </div>
                 </div>
 
-                <div class="mb-6">
-                    <h3 class="font-bold text-slate-800 text-sm mb-2">Description</h3>
-                    <p id="detailDesc" class="text-slate-600 text-sm leading-relaxed whitespace-pre-line"></p>
+                <p id="detailLocation" class="text-slate-600 font-medium mb-6 flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span class="text-lg">📍</span> <span class="text-sm">Location</span>
+                </p>
+
+                <div class="mb-8">
+                    <h3 class="font-bold text-slate-900 mb-3 text-lg">Description</h3>
+                    <p id="detailDesc" class="text-slate-600 text-sm leading-7 whitespace-pre-line"></p>
                 </div>
+
+                <button onclick="viewOnMap()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-slate-200 active:scale-95 transition mb-8">
+                    <span>🗺️ View Nearby Places on Map</span>
+                </button>
 
                 <div>
-                    <h3 class="font-bold text-slate-800 text-sm mb-2">Nearby Highlights (2km)</h3>
-                    <div id="nearbyList" class="space-y-2 text-sm text-slate-500 bg-slate-50 p-3 rounded-xl">Calculating...</div>
+                    <h3 class="font-bold text-slate-900 mb-3 text-lg">Nearby Highlights (3km Radius)</h3>
+                    <div id="nearbyList" class="space-y-2 text-sm text-slate-500 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        Tap 'View Nearby Places' to calculate.
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="p-4 border-t border-slate-100 bg-white grid grid-cols-5 gap-3 pb-8 md:pb-4">
-            <a id="waBtn" href="#" target="_blank" class="col-span-3 bg-[#25D366] text-white py-3 rounded-xl font-bold text-center hover:bg-[#20bd5a] flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95 transition">
-                WhatsApp
-            </a>
-            <a href="tel:+94725486676" class="col-span-2 bg-slate-900 text-white py-3 rounded-xl font-bold text-center hover:bg-slate-800 flex items-center justify-center gap-2 active:scale-95 transition">
-                📞 Call
-            </a>
+        <div class="p-4 bg-white border-t border-slate-100 grid grid-cols-2 gap-4 pb-8">
+            <a id="waBtn" href="#" target="_blank" class="bg-[#25D366] text-white py-3.5 rounded-xl font-bold text-center flex items-center justify-center gap-2 shadow-lg active:scale-95 transition">WhatsApp</a>
+            <a href="tel:+94725486676" class="bg-slate-900 text-white py-3.5 rounded-xl font-bold text-center flex items-center justify-center gap-2 active:scale-95 transition">Call Now</a>
         </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button onclick="switchTab('list')" id="nav-list" class="nav-item active">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+            <span>Listings</span>
+        </button>
+        <button onclick="switchTab('map')" id="nav-map" class="nav-item">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+            <span>Map View</span>
+        </button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -165,15 +178,26 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Map Setup
-        const map = L.map('map', { zoomControl: false }).setView([6.9271, 79.8612], 10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        if(window.innerWidth > 768) L.control.zoom({ position: 'topright' }).addTo(map);
-
+        const map = L.map('map', { zoomControl: false, tap: false }).setView([6.9271, 79.8612], 9);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+        
         let landsData = [];
         let markers = {};
         let nearbyLayer = L.layerGroup().addTo(map);
 
+        // Splash
+        window.addEventListener('load', () => { setTimeout(() => { document.getElementById('splash-screen').style.opacity='0'; setTimeout(()=>document.getElementById('splash-screen').style.display='none',800); }, 2500); });
+
+        // Navigation
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${tab}`).classList.add('active');
+            document.getElementById(`nav-${tab}`).classList.add('active');
+            if(tab === 'map') setTimeout(() => map.invalidateSize(), 100);
+        };
+
+        // Fetch Data
         async function loadLands() {
             const snap = await getDocs(collection(db, "lands"));
             const listDiv = document.getElementById('landList');
@@ -187,6 +211,7 @@
                 }
                 if(!data.imageUrls) data.imageUrls = [data.imageUrl];
                 landsData.push(data);
+                
                 renderCard(data, listDiv);
                 addMarker(data);
             });
@@ -201,16 +226,16 @@
         function renderCard(data, container) {
             const isSold = data.status === 'sold';
             const div = document.createElement('div');
-            div.className = "bg-white p-3 rounded-xl shadow-sm border border-slate-100 active:bg-slate-50 transition cursor-pointer flex gap-3 group relative overflow-hidden";
+            div.className = "bg-white p-3 rounded-2xl shadow-sm border border-slate-100 active:scale-[0.98] transition cursor-pointer flex gap-4 group";
             div.innerHTML = `
-                <div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 relative">
+                <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 relative bg-slate-100">
                     <img src="${data.imageUrls[0]}" class="w-full h-full object-cover">
-                    ${isSold ? '<div class="absolute inset-0 bg-red-500/30 flex items-center justify-center"><span class="bg-red-600 text-white text-[10px] font-bold px-1 rounded">SOLD</span></div>' : ''}
+                    ${isSold ? '<div class="absolute inset-0 bg-red-500/50 flex items-center justify-center"><span class="bg-red-600 border border-white text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">SOLD</span></div>' : ''}
                 </div>
-                <div class="flex-1 flex flex-col justify-center min-w-0">
-                    <h3 class="font-bold text-slate-800 leading-tight mb-1 truncate">${data.title}</h3>
-                    <p class="text-xs text-slate-500 mb-1 truncate">📍 ${data.location}</p>
-                    <p class="text-green-600 font-bold text-sm">Rs. ${data.pricePerPerch}/P</p>
+                <div class="flex-1 flex flex-col justify-center">
+                    <h3 class="font-bold text-slate-800 text-lg leading-tight mb-1 line-clamp-1">${data.title}</h3>
+                    <p class="text-xs text-slate-500 mb-2 line-clamp-1">📍 ${data.location}</p>
+                    <p class="text-green-600 font-bold text-base">Rs. ${data.pricePerPerch} <span class="text-slate-400 text-xs font-normal">/ Perch</span></p>
                 </div>
             `;
             div.onclick = () => openDetail(data);
@@ -220,93 +245,121 @@
         function addMarker(data) {
             if(!data.lat) return;
             const color = data.status === 'sold' ? '#ef4444' : '#16a34a';
-            const icon = L.divIcon({ className: '', html: `<div style="background:${color}; width:18px; height:18px; border-radius:50%; border:3px solid white; box-shadow:0 3px 6px rgba(0,0,0,0.3);"></div>` });
+            const icon = L.divIcon({ className: '', html: `<div style="background:${color}; width:24px; height:24px; border-radius:50%; border:3px solid white; box-shadow:0 4px 10px rgba(0,0,0,0.3);"></div>` });
             const marker = L.marker([data.lat, data.lng], {icon: icon}).addTo(map);
-            marker.on('click', () => openDetail(data));
+            marker.on('click', () => { showFloatingCard(data); map.flyTo([data.lat, data.lng], 14); });
             markers[data.id] = marker;
         }
 
-        // --- BEAUTIFUL NEARBY MARKERS ---
-        async function calcDistance(lat, lng) {
+        let selectedLandFromMap = null;
+        function showFloatingCard(data) {
+            selectedLandFromMap = data;
+            const card = document.getElementById('mapFloatCard');
+            document.getElementById('mapCardImg').src = data.imageUrls[0];
+            document.getElementById('mapCardTitle').innerText = data.title;
+            document.getElementById('mapCardLocation').innerText = data.location;
+            document.getElementById('mapCardPrice').innerText = "Rs. " + data.pricePerPerch;
+            card.classList.remove('hidden');
+        }
+        window.openDetailFromMap = () => { if(selectedLandFromMap) openDetail(selectedLandFromMap); };
+
+        let currentImgs = []; let idx = 0; let currentLand = null;
+
+        window.openDetail = (data) => {
+            currentLand = data; currentImgs = data.imageUrls; idx = 0;
+            document.getElementById('detailImg').src = currentImgs[0];
+            document.getElementById('detailTitle').innerText = data.title;
+            document.getElementById('detailLocation').innerText = data.location;
+            document.getElementById('detailPerches').innerText = data.perches + " P";
+            document.getElementById('detailPrice').innerText = "Rs. " + data.pricePerPerch;
+            document.getElementById('detailDesc').innerText = data.description || "No description provided.";
+
+            const isSold = data.status === 'sold';
+            const badge = document.getElementById('detailBadge');
+            badge.innerText = isSold ? 'SOLD OUT' : 'AVAILABLE';
+            badge.className = `inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase text-white shadow-lg mb-2 ${isSold ? 'bg-red-600' : 'bg-green-600'}`;
+            
+            const shareUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`;
+            window.history.pushState({id: data.id}, '', shareUrl);
+            document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Hi, I'm interested in: ${shareUrl}`;
+
+            document.getElementById('detail-view').classList.add('open');
+        };
+
+        window.closeDetail = () => {
+            document.getElementById('detail-view').classList.remove('open');
+            window.history.pushState({}, '', window.location.pathname);
+            document.getElementById('mapFloatCard').classList.add('hidden');
+        };
+
+        window.viewOnMap = () => {
+            if(!currentLand) return;
+            document.getElementById('detail-view').classList.remove('open');
+            switchTab('map');
+            map.flyTo([currentLand.lat, currentLand.lng], 15);
+            calcDistanceOnMap(currentLand.lat, currentLand.lng);
+        };
+
+        async function calcDistanceOnMap(lat, lng) {
             nearbyLayer.clearLayers();
             const list = document.getElementById('nearbyList');
-            list.innerHTML = "<span class='animate-pulse text-green-600'>Scanning nearby...</span>";
-            
-            const query = `[out:json];(node["amenity"~"school|hospital"](around:2000,${lat},${lng});node["shop"="supermarket"](around:2000,${lat},${lng}););out body;`;
+            list.innerHTML = "<span class='animate-pulse text-green-600 font-bold'>Scanning nearby area...</span>";
+
+            // IMPROVED OVERPASS QUERY (Nodes + Ways + Relations)
+            const query = `
+                [out:json][timeout:25];
+                (
+                  nwr["amenity"~"school|hospital|bank|pharmacy"](around:3000,${lat},${lng});
+                  nwr["shop"="supermarket"](around:3000,${lat},${lng});
+                );
+                out center;
+            `;
+
             try {
                 const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
                 const data = await res.json();
                 list.innerHTML = "";
-                if(data.elements.length === 0) list.innerHTML = "No major spots nearby.";
+                
+                if(data.elements.length === 0) list.innerHTML = "No major spots found within 3km.";
 
-                data.elements.forEach(el => {
-                    const d = map.distance([lat, lng], [el.lat, el.lon]);
-                    const distTxt = d > 1000 ? (d/1000).toFixed(1)+"km" : Math.round(d)+"m";
-                    let cls='m-shop', icon='🛒';
-                    if(el.tags.amenity == 'school') { cls='m-school'; icon='🎓'; }
-                    if(el.tags.amenity == 'hospital') { cls='m-hospital'; icon='🏥'; }
+                // Filter top 10 closest items
+                const places = data.elements.map(el => {
+                    const pLat = el.lat || el.center.lat;
+                    const pLon = el.lon || el.center.lon;
+                    const d = map.distance([lat, lng], [pLat, pLon]);
+                    return { ...el, dist: d, lat: pLat, lon: pLon };
+                }).sort((a,b) => a.dist - b.dist).slice(0, 10);
 
-                    list.innerHTML += `<div class="flex justify-between py-1 border-b border-slate-100 items-center">
+                places.forEach(el => {
+                    const distTxt = el.dist > 1000 ? (el.dist/1000).toFixed(1)+"km" : Math.round(el.dist)+"m";
+                    let icon='📍';
+                    if(el.tags.amenity == 'school') icon='🎓';
+                    if(el.tags.amenity == 'hospital') icon='🏥';
+                    if(el.tags.shop == 'supermarket') icon='🛒';
+                    if(el.tags.amenity == 'bank') icon='🏦';
+
+                    // Update List
+                    list.innerHTML += `<div class="flex justify-between py-2 border-b border-slate-100 items-center">
                         <span class="flex items-center gap-2 text-xs truncate w-2/3"><span class="text-base">${icon}</span> ${el.tags.name||'Place'}</span>
-                        <span class="font-bold text-slate-600 bg-slate-100 px-1.5 rounded text-[10px]">${distTxt}</span>
+                        <span class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-[10px]">${distTxt}</span>
                     </div>`;
-                    
-                    const customIcon = L.divIcon({ className: `amenity-marker ${cls}`, html: icon, iconSize: [34, 34], iconAnchor: [17, 17] });
-                    L.marker([el.lat, el.lon], {icon: customIcon}).addTo(nearbyLayer).bindPopup(el.tags.name);
+
+                    // Add Distance Label to Map
+                    const html = `<div class="dist-marker"><span>${icon}</span> ${distTxt}</div>`;
+                    const customIcon = L.divIcon({ className: '', html: html, iconSize: [80, 30] });
+                    L.marker([el.lat, el.lon], {icon: customIcon}).addTo(nearbyLayer);
                 });
-            } catch(e) { console.log(e); }
+            } catch(e) { console.log(e); list.innerHTML = "Error loading nearby data."; }
         }
-
-        // UI Interactions
-        let currentImgs = []; let idx = 0;
-        window.openDetail = (data) => {
-            currentImgs = data.imageUrls; idx = 0;
-            document.getElementById('detailImg').src = currentImgs[0];
-            document.getElementById('detailTitle').innerText = data.title;
-            document.getElementById('detailLocation').innerText = "📍 " + data.location;
-            document.getElementById('detailPerches').innerText = data.perches + " P";
-            document.getElementById('detailPrice').innerText = data.pricePerPerch;
-            document.getElementById('detailDesc').innerText = data.description;
-
-            const isSold = data.status === 'sold';
-            const badge = document.getElementById('detailBadge');
-            badge.innerText = isSold ? 'SOLD' : 'AVAILABLE';
-            badge.className = `absolute bottom-4 left-4 px-2 py-1 rounded text-[10px] font-bold uppercase text-white shadow ${isSold ? 'bg-red-600' : 'bg-green-600'}`;
-            
-            const shareUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`;
-            window.history.pushState({id: data.id}, '', shareUrl);
-            document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Interested in: ${shareUrl}`;
-
-            document.getElementById('detailPanel').classList.add('open');
-            // Mobile: Minimize List
-            if(window.innerWidth < 768) document.getElementById('listPanel').classList.add('minimized');
-            
-            map.flyTo([data.lat, data.lng], 15);
-            calcDistance(data.lat, data.lng);
-        };
-
-        window.closeDetail = () => {
-            document.getElementById('detailPanel').classList.remove('open');
-            window.history.pushState({}, '', window.location.pathname);
-            nearbyLayer.clearLayers();
-            map.setZoom(10);
-            if(window.innerWidth < 768) document.getElementById('listPanel').classList.remove('minimized');
-        };
 
         window.shareLink = () => { navigator.clipboard.writeText(window.location.href).then(() => alert("Link Copied! 🔗")); };
         window.slide = (n) => { idx += n; if(idx >= currentImgs.length) idx = 0; if(idx < 0) idx = currentImgs.length - 1; document.getElementById('detailImg').src = currentImgs[idx]; };
         
-        // Mobile List Toggle
-        window.toggleList = () => { document.getElementById('listPanel').classList.toggle('minimized'); };
-
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const listDiv = document.getElementById('landList'); listDiv.innerHTML = '';
             landsData.forEach(l => {
-                if(l.location.toLowerCase().includes(term) || l.title.toLowerCase().includes(term)) {
-                    renderCard(l, listDiv);
-                    if(markers[l.id]) markers[l.id].addTo(map);
-                } else { if(markers[l.id]) map.removeLayer(markers[l.id]); }
+                if(l.location.toLowerCase().includes(term) || l.title.toLowerCase().includes(term)) renderCard(l, listDiv);
             });
         });
 
