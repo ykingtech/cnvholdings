@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Land Sales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+
+    <div id="login-section" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg mt-10">
+        <h2 class="text-2xl font-bold mb-4">Admin Login</h2>
+        <input type="email" id="email" placeholder="Email" class="w-full p-2 border rounded mb-2">
+        <input type="password" id="password" placeholder="Password" class="w-full p-2 border rounded mb-4">
+        <button id="loginBtn" class="w-full bg-green-600 text-white p-2 rounded">Login</button>
+    </div>
+
+    <div id="dashboard-section" class="hidden max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg mt-10">
+        <div class="flex justify-between mb-6">
+            <h1 class="text-2xl font-bold">ඉඩම් ඇතුලත් කිරීම</h1>
+            <button id="logoutBtn" class="text-red-500 underline">Logout</button>
+        </div>
+
+        <form id="addLandForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" id="landTitle" placeholder="Title (මාතෘකාව)" class="p-2 border rounded" required>
+            <input type="text" id="landLocation" placeholder="Location Name (Ex: Malabe)" class="p-2 border rounded" required>
+            
+            <div class="md:col-span-2 bg-blue-50 p-4 rounded-lg">
+                <p class="text-sm font-bold text-blue-800 mb-2">Google Map Coordinates (මැප් එකේ ලකුණු කිරීමට)</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="landLat" placeholder="Latitude (Ex: 6.9012)" class="p-2 border rounded" required>
+                    <input type="text" id="landLng" placeholder="Longitude (Ex: 79.8823)" class="p-2 border rounded" required>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Tip: Google Maps වල ඉඩම උඩ Right Click කරලා පළමු ඉලක්කම් දෙක Copy කරගන්න.</p>
+            </div>
+
+            <input type="number" step="0.01" id="landPerches" placeholder="Perches" class="p-2 border rounded" required>
+            <input type="text" id="landPrice" placeholder="Price Per Perch" class="p-2 border rounded" required>
+            <select id="landStatus" class="p-2 border rounded">
+                <option value="available">Available</option>
+                <option value="sold">Sold</option>
+            </select>
+            <input type="url" id="landImage" placeholder="Image URL" class="p-2 border rounded md:col-span-2" required>
+            
+            <button type="submit" class="bg-green-600 text-white p-3 rounded md:col-span-2 font-bold">Save Land</button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyA30v8yswbyqF-oB29C7DXPWpKwCQscs5o", authDomain: "land-425be.firebaseapp.com", projectId: "land-425be", storageBucket: "land-425be.firebasestorage.app", messagingSenderId: "1053755182230", appId: "1:1053755182230:web:9596bee1de56a3c63e86b7", measurementId: "G-DQVYCKN9KY" };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Auth Logic (Login/Logout) - Same as before
+        const loginSection = document.getElementById('login-section');
+        const dashboardSection = document.getElementById('dashboard-section');
+
+        onAuthStateChanged(auth, user => {
+            if (user) { loginSection.classList.add('hidden'); dashboardSection.classList.remove('hidden'); }
+            else { loginSection.classList.remove('hidden'); dashboardSection.classList.add('hidden'); }
+        });
+
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value)
+                .catch(e => alert(e.message));
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+
+        // Add Data Logic
+        document.getElementById('addLandForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await addDoc(collection(db, "lands"), {
+                    title: document.getElementById('landTitle').value,
+                    location: document.getElementById('landLocation').value,
+                    lat: parseFloat(document.getElementById('landLat').value), // Number විදියට save කරනවා
+                    lng: parseFloat(document.getElementById('landLng').value), // Number විදියට save කරනවා
+                    perches: document.getElementById('landPerches').value,
+                    pricePerPerch: document.getElementById('landPrice').value,
+                    status: document.getElementById('landStatus').value,
+                    imageUrl: document.getElementById('landImage').value,
+                    timestamp: new Date()
+                });
+                alert("Saved!");
+                e.target.reset();
+            } catch (error) { alert("Error: " + error.message); }
+        });
+    </script>
+</body>
+</html>
