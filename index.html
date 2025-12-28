@@ -2,124 +2,158 @@
 <html lang="si">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CNV HOLDINGS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Noto+Sans+Sinhala:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', 'Noto Sans Sinhala', sans-serif; overflow: hidden; }
+        body { font-family: 'Plus Jakarta Sans', 'Noto Sans Sinhala', sans-serif; overflow: hidden; background: #f8fafc; }
         
-        /* Sidebar Styles */
-        .sidebar { width: 420px; height: 100vh; background: #ffffff; z-index: 20; position: relative; box-shadow: 10px 0 30px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-        .map-wrapper { flex: 1; height: 100vh; position: relative; }
+        /* Map is always full screen on mobile */
+        .map-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; z-index: 0; }
         #map { width: 100%; height: 100%; }
 
-        /* Beautiful Map Markers CSS */
+        /* LIST PANEL (Bottom Sheet on Mobile, Sidebar on Desktop) */
+        .list-panel {
+            position: absolute; z-index: 20; background: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+        }
+
+        /* Desktop Style */
+        @media (min-width: 768px) {
+            .list-panel { top: 0; left: 0; width: 400px; height: 100vh; box-shadow: 5px 0 15px rgba(0,0,0,0.05); }
+            .map-wrapper { margin-left: 400px; width: calc(100% - 400px); }
+        }
+
+        /* Mobile Style (Bottom Sheet) */
+        @media (max-width: 767px) {
+            .list-panel { 
+                bottom: 0; left: 0; width: 100%; height: 40vh; /* Takes 40% of screen */
+                border-radius: 24px 24px 0 0; 
+                box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
+            }
+            .list-panel.minimized { transform: translateY(calc(100% - 60px)); } /* Show only header */
+            .map-wrapper { margin-left: 0; width: 100%; }
+            
+            /* Hide scrollbar in list for clean look */
+            #landList::-webkit-scrollbar { display: none; }
+        }
+
+        /* DETAIL PANEL (Slides up) */
+        .detail-panel {
+            position: absolute; z-index: 40; background: white;
+            transition: transform 0.3s ease-out;
+            display: flex; flex-direction: column;
+        }
+
+        @media (min-width: 768px) {
+            .detail-panel { top: 0; left: 0; width: 400px; height: 100vh; transform: translateX(-100%); border-right: 1px solid #eee; }
+            .detail-panel.open { transform: translateX(0); }
+        }
+
+        @media (max-width: 767px) {
+            .detail-panel { 
+                bottom: 0; left: 0; width: 100%; height: 85vh; /* Almost full screen */
+                border-radius: 24px 24px 0 0; 
+                transform: translateY(110%);
+                box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+            }
+            .detail-panel.open { transform: translateY(0); }
+        }
+
+        /* Map Markers */
         .amenity-marker {
             display: flex; align-items: center; justify-content: center;
-            width: 36px; height: 36px; border-radius: 50%;
-            border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            font-size: 18px; transition: transform 0.2s;
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 2px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 16px; animation: popIn 0.3s ease;
         }
-        .amenity-marker:hover { transform: scale(1.2); z-index: 1000 !important; }
-        
-        /* Colors for Categories */
-        .marker-school { background: #3b82f6; color: white; } /* Blue */
-        .marker-hospital { background: #ef4444; color: white; } /* Red */
-        .marker-shop { background: #f97316; color: white; } /* Orange */
-
-        /* Detail Panel Slide */
-        #detail-panel {
-            position: absolute; top: 0; left: 0; width: 420px; height: 100vh;
-            background: white; z-index: 30; transform: translateX(-100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex; flex-direction: column; box-shadow: 10px 0 30px rgba(0,0,0,0.1);
-        }
-        #detail-panel.open { transform: translateX(0); }
-
-        /* Mobile */
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: 50vh; position: absolute; bottom: 0; border-radius: 20px 20px 0 0; z-index: 40; transform: translateY(0); transition: transform 0.3s; }
-            .sidebar.minimized { transform: translateY(100%); }
-            #detail-panel { width: 100%; z-index: 50; }
-            .map-wrapper { height: 100vh; position: absolute; width: 100%; top: 0; }
-        }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .m-school { background: #3b82f6; color: white; }
+        .m-hospital { background: #ef4444; color: white; }
+        .m-shop { background: #f97316; color: white; }
     </style>
 </head>
-<body class="bg-slate-50 flex flex-col md:flex-row h-screen">
+<body>
 
-    <div id="sidebar" class="sidebar">
-        <div class="p-6 bg-white z-10 border-b border-slate-100">
-            <h1 class="text-2xl font-extrabold text-slate-800 mb-4 tracking-tight">CNV HOLDINGS 🌴</h1>
-            <div class="relative">
-                <input type="text" id="searchInput" placeholder="Search (e.g. Kottawa)..." 
-                       class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-green-500 transition text-sm font-medium">
-                <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
+    <div class="map-wrapper">
+        <div id="map"></div>
+    </div>
+
+    <div id="listPanel" class="list-panel">
+        <div class="md:hidden w-full flex justify-center pt-3 pb-1" onclick="toggleList()">
+            <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+        </div>
+
+        <div class="px-5 pb-4 pt-2 md:pt-6 bg-white z-10 border-b border-slate-100">
+            <h1 class="hidden md:block text-2xl font-extrabold text-slate-800 mb-4">CNV HOLDINGS 🌴</h1>
+            <div class="relative shadow-sm">
+                <input type="text" id="searchInput" placeholder="Search city..." 
+                       class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-green-500 text-sm font-medium">
+                <span class="absolute left-3 top-3 text-gray-400">🔍</span>
             </div>
         </div>
 
-        <div id="landList" class="p-4 space-y-4 flex-1 overflow-y-auto">
+        <div id="landList" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
             </div>
     </div>
 
-    <div id="detail-panel">
-        <div class="p-4 flex items-center justify-between border-b border-slate-100 bg-white">
-            <button onclick="closeDetail()" class="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-bold text-sm">
-                ← Back
+    <div id="detailPanel" class="detail-panel">
+        <div class="p-4 flex items-center justify-between border-b border-slate-100 bg-white rounded-t-3xl md:rounded-none">
+            <button onclick="closeDetail()" class="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-bold text-sm bg-slate-100 px-3 py-2 rounded-full">
+                ✕ Close
             </button>
-            <button onclick="shareLink()" class="bg-slate-50 p-2 rounded-full hover:bg-green-50 text-slate-500 hover:text-green-600 transition" title="Copy Link">
+            <button onclick="shareLink()" class="bg-green-50 px-3 py-2 rounded-full text-green-600 font-bold text-xs" title="Copy Link">
                 🔗 Share
             </button>
         </div>
 
-        <div class="h-64 bg-slate-100 relative group flex-shrink-0">
-            <img id="detailImg" src="" class="w-full h-full object-cover transition duration-300">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-            
-            <button onclick="slide(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white p-2 rounded-full transition">❮</button>
-            <button onclick="slide(1)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md text-white p-2 rounded-full transition">❯</button>
-            
-            <span id="detailBadge" class="absolute bottom-4 left-4 px-3 py-1 rounded-md text-[10px] font-extrabold uppercase text-white bg-green-600 shadow-lg">Available</span>
-        </div>
-
-        <div class="flex-1 overflow-y-auto p-6">
-            <h2 id="detailTitle" class="text-2xl font-bold text-slate-900 leading-tight mb-1"></h2>
-            <p id="detailLocation" class="text-green-600 font-bold mb-6 flex items-center gap-1 text-sm">📍 Location</p>
-
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                    <p class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Extent</p>
-                    <p id="detailPerches" class="font-bold text-slate-800 text-lg"></p>
-                </div>
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                    <p class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Price/Perch</p>
-                    <p id="detailPrice" class="font-bold text-green-600 text-lg"></p>
-                </div>
+        <div class="flex-1 overflow-y-auto">
+            <div class="h-60 bg-slate-200 relative group">
+                <img id="detailImg" src="" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <button onclick="slide(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 text-white p-2 rounded-full backdrop-blur">❮</button>
+                <button onclick="slide(1)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 text-white p-2 rounded-full backdrop-blur">❯</button>
+                <span id="detailBadge" class="absolute bottom-4 left-4 px-2 py-1 rounded text-[10px] font-bold uppercase text-white bg-green-600 shadow">Available</span>
             </div>
 
-            <h3 class="font-bold text-slate-800 text-sm mb-2">Description</h3>
-            <p id="detailDesc" class="text-slate-600 text-sm leading-relaxed whitespace-pre-line mb-6"></p>
+            <div class="p-6">
+                <h2 id="detailTitle" class="text-xl font-bold text-slate-900 leading-tight mb-1"></h2>
+                <p id="detailLocation" class="text-green-600 font-bold mb-6 flex items-center gap-1 text-sm">📍 Location</p>
 
-            <h3 class="font-bold text-slate-800 text-sm mb-3">Nearby Highlights</h3>
-            <div id="nearbyList" class="space-y-2 mb-6 text-sm text-slate-500">Calculating...</div>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                        <p class="text-[10px] uppercase text-slate-400 font-bold">Extent</p>
+                        <p id="detailPerches" class="font-bold text-slate-800"></p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                        <p class="text-[10px] uppercase text-slate-400 font-bold">Price/P</p>
+                        <p id="detailPrice" class="font-bold text-green-600"></p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="font-bold text-slate-800 text-sm mb-2">Description</h3>
+                    <p id="detailDesc" class="text-slate-600 text-sm leading-relaxed whitespace-pre-line"></p>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm mb-2">Nearby Highlights (2km)</h3>
+                    <div id="nearbyList" class="space-y-2 text-sm text-slate-500 bg-slate-50 p-3 rounded-xl">Calculating...</div>
+                </div>
+            </div>
         </div>
 
-        <div class="p-4 border-t border-slate-100 bg-white grid grid-cols-5 gap-3">
-            <a id="waBtn" href="#" target="_blank" class="col-span-3 bg-[#25D366] text-white py-3 rounded-xl font-bold text-center hover:bg-[#20bd5a] flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 transition">
+        <div class="p-4 border-t border-slate-100 bg-white grid grid-cols-5 gap-3 pb-8 md:pb-4">
+            <a id="waBtn" href="#" target="_blank" class="col-span-3 bg-[#25D366] text-white py-3 rounded-xl font-bold text-center hover:bg-[#20bd5a] flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95 transition">
                 WhatsApp
             </a>
-            <a href="tel:+94725486676" class="col-span-2 bg-slate-900 text-white py-3 rounded-xl font-bold text-center hover:bg-slate-800 flex items-center justify-center gap-2 transition">
+            <a href="tel:+94725486676" class="col-span-2 bg-slate-900 text-white py-3 rounded-xl font-bold text-center hover:bg-slate-800 flex items-center justify-center gap-2 active:scale-95 transition">
                 📞 Call
             </a>
         </div>
-    </div>
-
-    <div class="map-wrapper">
-        <div id="map"></div>
-        <button onclick="toggleMobile()" class="md:hidden absolute bottom-6 right-6 z-[400] bg-slate-900 text-white px-5 py-3 rounded-full font-bold shadow-2xl">
-            🗺️ Map / List
-        </button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -131,15 +165,15 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Map Setup
         const map = L.map('map', { zoomControl: false }).setView([6.9271, 79.8612], 10);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
-        L.control.zoom({ position: 'topright' }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        if(window.innerWidth > 768) L.control.zoom({ position: 'topright' }).addTo(map);
 
         let landsData = [];
         let markers = {};
         let nearbyLayer = L.layerGroup().addTo(map);
 
-        // Fetch & Delete Logic (Client side check for display)
         async function loadLands() {
             const snap = await getDocs(collection(db, "lands"));
             const listDiv = document.getElementById('landList');
@@ -147,25 +181,19 @@
 
             snap.forEach(doc => {
                 const data = doc.data(); data.id = doc.id;
-                
-                // Hide if sold > 3 days (Visual check only, Admin deletes technically)
                 if (data.status === 'sold' && data.soldAt) {
-                    const soldDate = new Date(data.soldAt.seconds ? data.soldAt.seconds*1000 : data.soldAt);
-                    const diffDays = Math.ceil(Math.abs(now - soldDate) / (1000 * 60 * 60 * 24));
-                    if(diffDays > 3) return; // Skip Rendering
+                    const diff = Math.ceil(Math.abs(now - new Date(data.soldAt.seconds?data.soldAt.seconds*1000:data.soldAt)) / 86400000);
+                    if(diff > 3) return;
                 }
-
                 if(!data.imageUrls) data.imageUrls = [data.imageUrl];
                 landsData.push(data);
                 renderCard(data, listDiv);
                 addMarker(data);
             });
 
-            // Handle Share Link
-            const urlParams = new URLSearchParams(window.location.search);
-            const sharedId = urlParams.get('id');
-            if(sharedId) {
-                const land = landsData.find(l => l.id === sharedId);
+            const params = new URLSearchParams(window.location.search);
+            if(params.get('id')) {
+                const land = landsData.find(l => l.id === params.get('id'));
                 if(land) openDetail(land);
             }
         }
@@ -173,15 +201,15 @@
         function renderCard(data, container) {
             const isSold = data.status === 'sold';
             const div = document.createElement('div');
-            div.className = "bg-white p-3 rounded-2xl border border-slate-100 hover:shadow-lg transition cursor-pointer flex gap-3 group relative overflow-hidden";
+            div.className = "bg-white p-3 rounded-xl shadow-sm border border-slate-100 active:bg-slate-50 transition cursor-pointer flex gap-3 group relative overflow-hidden";
             div.innerHTML = `
-                <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 relative">
-                    <img src="${data.imageUrls[0]}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                    ${isSold ? '<div class="absolute inset-0 bg-red-500/20 flex items-center justify-center"><span class="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded">SOLD</span></div>' : ''}
+                <div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 relative">
+                    <img src="${data.imageUrls[0]}" class="w-full h-full object-cover">
+                    ${isSold ? '<div class="absolute inset-0 bg-red-500/30 flex items-center justify-center"><span class="bg-red-600 text-white text-[10px] font-bold px-1 rounded">SOLD</span></div>' : ''}
                 </div>
-                <div class="flex-1 flex flex-col justify-center">
-                    <h3 class="font-bold text-slate-800 leading-tight mb-1 line-clamp-1">${data.title}</h3>
-                    <p class="text-xs text-slate-500 mb-2">📍 ${data.location}</p>
+                <div class="flex-1 flex flex-col justify-center min-w-0">
+                    <h3 class="font-bold text-slate-800 leading-tight mb-1 truncate">${data.title}</h3>
+                    <p class="text-xs text-slate-500 mb-1 truncate">📍 ${data.location}</p>
                     <p class="text-green-600 font-bold text-sm">Rs. ${data.pricePerPerch}/P</p>
                 </div>
             `;
@@ -190,27 +218,19 @@
         }
 
         function addMarker(data) {
-            if(data.lat) {
-                const isSold = data.status === 'sold';
-                const color = isSold ? '#ef4444' : '#16a34a'; // Red or Green
-                
-                // Beautiful Land Marker
-                const icon = L.divIcon({
-                    className: '',
-                    html: `<div style="background:${color}; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>`
-                });
-
-                const marker = L.marker([data.lat, data.lng], {icon: icon}).addTo(map);
-                marker.on('click', () => openDetail(data));
-                markers[data.id] = marker;
-            }
+            if(!data.lat) return;
+            const color = data.status === 'sold' ? '#ef4444' : '#16a34a';
+            const icon = L.divIcon({ className: '', html: `<div style="background:${color}; width:18px; height:18px; border-radius:50%; border:3px solid white; box-shadow:0 3px 6px rgba(0,0,0,0.3);"></div>` });
+            const marker = L.marker([data.lat, data.lng], {icon: icon}).addTo(map);
+            marker.on('click', () => openDetail(data));
+            markers[data.id] = marker;
         }
 
         // --- BEAUTIFUL NEARBY MARKERS ---
         async function calcDistance(lat, lng) {
             nearbyLayer.clearLayers();
             const list = document.getElementById('nearbyList');
-            list.innerHTML = "<span class='animate-pulse text-green-600'>Scanning area...</span>";
+            list.innerHTML = "<span class='animate-pulse text-green-600'>Scanning nearby...</span>";
             
             const query = `[out:json];(node["amenity"~"school|hospital"](around:2000,${lat},${lng});node["shop"="supermarket"](around:2000,${lat},${lng}););out body;`;
             try {
@@ -222,32 +242,22 @@
                 data.elements.forEach(el => {
                     const d = map.distance([lat, lng], [el.lat, el.lon]);
                     const distTxt = d > 1000 ? (d/1000).toFixed(1)+"km" : Math.round(d)+"m";
-                    
-                    let typeClass = 'marker-shop'; let icon = '🛒';
-                    if(el.tags.amenity == 'school') { typeClass = 'marker-school'; icon='🎓'; }
-                    if(el.tags.amenity == 'hospital') { typeClass = 'marker-hospital'; icon='🏥'; }
+                    let cls='m-shop', icon='🛒';
+                    if(el.tags.amenity == 'school') { cls='m-school'; icon='🎓'; }
+                    if(el.tags.amenity == 'hospital') { cls='m-hospital'; icon='🏥'; }
 
-                    // Add to Sidebar List
-                    list.innerHTML += `<div class="flex justify-between py-2 border-b border-slate-50 items-center">
-                        <span class="flex items-center gap-2"><span class="text-lg">${icon}</span> ${el.tags.name||'Shop'}</span>
-                        <span class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-xs">${distTxt}</span>
+                    list.innerHTML += `<div class="flex justify-between py-1 border-b border-slate-100 items-center">
+                        <span class="flex items-center gap-2 text-xs truncate w-2/3"><span class="text-base">${icon}</span> ${el.tags.name||'Place'}</span>
+                        <span class="font-bold text-slate-600 bg-slate-100 px-1.5 rounded text-[10px]">${distTxt}</span>
                     </div>`;
                     
-                    // Add BEAUTIFUL Marker to Map
-                    const customIcon = L.divIcon({
-                        className: `amenity-marker ${typeClass}`,
-                        html: icon,
-                        iconSize: [36, 36],
-                        iconAnchor: [18, 18]
-                    });
-                    
-                    L.marker([el.lat, el.lon], {icon: customIcon}).addTo(nearbyLayer)
-                     .bindPopup(`<b class="text-sm">${el.tags.name}</b><br>${distTxt} away`);
+                    const customIcon = L.divIcon({ className: `amenity-marker ${cls}`, html: icon, iconSize: [34, 34], iconAnchor: [17, 17] });
+                    L.marker([el.lat, el.lon], {icon: customIcon}).addTo(nearbyLayer).bindPopup(el.tags.name);
                 });
             } catch(e) { console.log(e); }
         }
 
-        // Detail Panel Logic
+        // UI Interactions
         let currentImgs = []; let idx = 0;
         window.openDetail = (data) => {
             currentImgs = data.imageUrls; idx = 0;
@@ -257,36 +267,38 @@
             document.getElementById('detailPerches').innerText = data.perches + " P";
             document.getElementById('detailPrice').innerText = data.pricePerPerch;
             document.getElementById('detailDesc').innerText = data.description;
-            
-            const badge = document.getElementById('detailBadge');
-            const isSold = data.status === 'sold';
-            badge.innerText = isSold ? 'SOLD OUT' : 'AVAILABLE';
-            badge.className = `absolute bottom-4 left-4 px-3 py-1 rounded-md text-[10px] font-extrabold uppercase text-white shadow-lg ${isSold ? 'bg-red-600' : 'bg-green-600'}`;
 
+            const isSold = data.status === 'sold';
+            const badge = document.getElementById('detailBadge');
+            badge.innerText = isSold ? 'SOLD' : 'AVAILABLE';
+            badge.className = `absolute bottom-4 left-4 px-2 py-1 rounded text-[10px] font-bold uppercase text-white shadow ${isSold ? 'bg-red-600' : 'bg-green-600'}`;
+            
             const shareUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`;
             window.history.pushState({id: data.id}, '', shareUrl);
-            document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Interested: ${shareUrl}`;
+            document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Interested in: ${shareUrl}`;
 
-            document.getElementById('detail-panel').classList.add('open');
+            document.getElementById('detailPanel').classList.add('open');
+            // Mobile: Minimize List
+            if(window.innerWidth < 768) document.getElementById('listPanel').classList.add('minimized');
+            
             map.flyTo([data.lat, data.lng], 15);
             calcDistance(data.lat, data.lng);
-
-            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('minimized');
         };
 
         window.closeDetail = () => {
-            document.getElementById('detail-panel').classList.remove('open');
+            document.getElementById('detailPanel').classList.remove('open');
             window.history.pushState({}, '', window.location.pathname);
             nearbyLayer.clearLayers();
             map.setZoom(10);
-            if(window.innerWidth < 768) document.getElementById('sidebar').classList.remove('minimized');
+            if(window.innerWidth < 768) document.getElementById('listPanel').classList.remove('minimized');
         };
 
         window.shareLink = () => { navigator.clipboard.writeText(window.location.href).then(() => alert("Link Copied! 🔗")); };
         window.slide = (n) => { idx += n; if(idx >= currentImgs.length) idx = 0; if(idx < 0) idx = currentImgs.length - 1; document.getElementById('detailImg').src = currentImgs[idx]; };
-        window.toggleMobile = () => { document.getElementById('sidebar').classList.toggle('minimized'); };
+        
+        // Mobile List Toggle
+        window.toggleList = () => { document.getElementById('listPanel').classList.toggle('minimized'); };
 
-        // Search
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const listDiv = document.getElementById('landList'); listDiv.innerHTML = '';
