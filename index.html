@@ -13,29 +13,63 @@
     <style>
         body { font-family: 'Outfit', 'Noto Sans Sinhala', sans-serif; background: #f8fafc; overflow: hidden; -webkit-tap-highlight-color: transparent; }
         
-        /* SPLASH SCREEN */
+        /* --- DYNAMIC ICON BACKGROUND SPLASH --- */
         #splash-screen {
             position: fixed; inset: 0; z-index: 9999;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(to bottom, #ffffff, #ecfdf5); /* White to Mint Green */
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.8s ease-out;
-        }
-        .brand-text { font-size: 2.5rem; font-weight: 900; color: white; letter-spacing: -1px; animation: fadeInUp 1s ease forwards; opacity: 0; transform: translateY(20px); }
-        .sub-text { font-size: 0.8rem; color: #94a3b8; letter-spacing: 2px; margin-top: 5px; animation: fadeInUp 1s ease 0.3s forwards; opacity: 0; transform: translateY(20px); }
-        
-        /* ROAD ANIMATION */
-        .road-scene { margin-top: 30px; width: 220px; height: 100px; position: relative; }
-        .road-path { fill: none; stroke: #3b82f6; stroke-width: 4; stroke-dasharray: 10, 10; stroke-linecap: round; opacity: 0.5; }
-        .dest-pin { font-size: 24px; animation: bounce 1s infinite; transform-origin: bottom center; }
-        .car-icon { 
-            font-size: 24px; 
-            transform-box: fill-box; 
-            transform-origin: center; 
-            transform: scaleX(-1); /* Flips car to face right */
+            overflow: hidden;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
         }
 
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        /* Floating Background Icons */
+        .bg-icon-container {
+            position: absolute; inset: 0; pointer-events: none; z-index: 0;
+        }
+        .bg-icon {
+            position: absolute;
+            color: #16a34a; /* Green */
+            opacity: 0.08; /* Very subtle */
+            animation: floatIcon 6s infinite ease-in-out;
+        }
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.08; }
+            50% { transform: translateY(-15px) scale(1.1); opacity: 0.15; }
+        }
+
+        /* Main Logo Content */
+        .splash-content { position: relative; z-index: 10; text-align: center; }
+        
+        .splash-logo {
+            font-size: 3.5rem; font-weight: 900; color: #1e293b; letter-spacing: -2px;
+            margin-bottom: 5px;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .splash-sub {
+            color: #15803d; letter-spacing: 4px; font-size: 0.8rem; font-weight: 800;
+            margin-bottom: 40px; text-transform: uppercase;
+        }
+
+        /* Loader Line */
+        .loader-line {
+            width: 180px; height: 4px; background: #e2e8f0;
+            border-radius: 10px; overflow: hidden; position: relative; margin: 0 auto;
+        }
+        .loader-fill {
+            position: absolute; left: 0; top: 0; height: 100%; width: 40%;
+            background: #16a34a; border-radius: 10px;
+            animation: lineMove 1.2s infinite ease-in-out;
+        }
+        @keyframes lineMove { 0% { left: -40%; } 100% { left: 100%; } }
+
+        /* --- CARD ANIMATIONS --- */
+        @keyframes cardSlideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .land-card {
+            animation: cardSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+        }
 
         /* VIEWS */
         .view-section { height: calc(100vh - 75px); width: 100%; display: none; overflow-y: auto; scroll-behavior: smooth; }
@@ -105,21 +139,33 @@
 <body>
 
     <div id="splash-screen">
-        <h1 class="brand-text">CNV <span class="text-green-500">HOLDINGS</span></h1>
-        <p class="sub-text">POWERED BY CNV GROUP</p>
-        <div class="road-scene">
-            <svg width="220" height="100" viewBox="0 0 220 100">
-                <path id="roadPath" d="M10,80 Q60,10 110,50 T200,50" class="road-path" />
-                <text x="190" y="45" class="dest-pin">📍</text>
-                <g>
-                    <text x="-15" y="5" class="car-icon">🚗</text>
-                    <animateMotion dur="2.5s" repeatCount="indefinite" rotate="auto">
-                        <mpath href="#roadPath"/>
-                    </animateMotion>
-                </g>
-            </svg>
+        <div class="bg-icon-container">
+            <i class="fas fa-map-marker-alt bg-icon" style="top: 10%; left: 10%; font-size: 40px; animation-delay: 0s;"></i>
+            <i class="fas fa-tree bg-icon" style="top: 20%; left: 25%; font-size: 24px; animation-delay: 1s;"></i>
+            <i class="fas fa-home bg-icon" style="top: 5%; left: 40%; font-size: 30px; animation-delay: 2s;"></i>
+            
+            <i class="fas fa-certificate bg-icon" style="top: 15%; right: 10%; font-size: 35px; animation-delay: 0.5s;"></i>
+            <i class="fas fa-key bg-icon" style="top: 30%; right: 25%; font-size: 28px; animation-delay: 1.5s;"></i>
+            
+            <i class="fas fa-handshake bg-icon" style="top: 50%; left: 5%; font-size: 45px; animation-delay: 3s;"></i>
+            <i class="fas fa-tags bg-icon" style="top: 45%; right: 5%; font-size: 30px; animation-delay: 2.5s;"></i>
+
+            <i class="fas fa-home bg-icon" style="bottom: 15%; left: 15%; font-size: 50px; animation-delay: 1s;"></i>
+            <i class="fas fa-map bg-icon" style="bottom: 10%; right: 20%; font-size: 40px; animation-delay: 0s;"></i>
+            <i class="fas fa-tree bg-icon" style="bottom: 25%; left: 40%; font-size: 25px; animation-delay: 2s;"></i>
+            <i class="fas fa-check-circle bg-icon" style="bottom: 5%; right: 45%; font-size: 30px; animation-delay: 1.2s;"></i>
         </div>
-        <p class="text-slate-500 text-xs mt-2 animate-pulse">Navigating to properties...</p>
+
+        <div class="splash-content">
+            <h1 class="splash-logo">CNV <span class="text-green-600">HOLDINGS</span></h1>
+            <p class="splash-sub">YOUR TRUSTED LAND PARTNER</p>
+            
+            <div class="loader-line">
+                <div class="loader-fill"></div>
+            </div>
+            
+            <p class="text-slate-400 text-[10px] mt-4 font-bold tracking-widest animate-pulse">LOADING PROPERTIES...</p>
+        </div>
     </div>
 
     <div id="secret-screen" class="fixed inset-0 z-[99999] hidden flex-col items-center justify-center text-center p-6 opacity-0" onclick="closeSecret()">
@@ -396,8 +442,8 @@
                 setTimeout(() => {
                     const splash = document.getElementById('splash-screen');
                     splash.style.opacity = '0';
-                    setTimeout(() => splash.style.display = 'none', 800);
-                }, 2000);
+                    splash.style.visibility = 'hidden'; // Ensure clicks pass through
+                }, 2500); // Allow progress bar animation to complete roughly
             } catch (e) { 
                 console.error("Error fetching lands:", e); 
                 setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 3000); 
@@ -430,8 +476,7 @@
                     updateMapMarkers(displayedData); 
                     showFloatingCard(data); 
                     map.flyTo([data.lat, data.lng], 14); 
-
-                    // --- NEW: TRIGGER NEARBY POPUP ON CLICK ---
+                    // TRIGGER NEARBY ON CLICK
                     calcDistanceOnMap(data.lat, data.lng);
                 });
                 marker.addTo(landLayer);
@@ -443,7 +488,10 @@
             const listDiv = document.getElementById('landList'); const spinner = document.getElementById('loadMoreSpinner');
             if(renderCount >= displayedData.length) { spinner.style.display = 'none'; if(displayedData.length === 0) listDiv.innerHTML = '<p class="text-center text-slate-400 py-10">No properties found.</p>'; return; }
             const nextBatch = displayedData.slice(renderCount, renderCount + BATCH_SIZE);
-            nextBatch.forEach(data => renderCard(data, listDiv));
+            
+            // Render with staggered delay index
+            nextBatch.forEach((data, index) => renderCard(data, listDiv, index));
+            
             renderCount += BATCH_SIZE;
             spinner.style.display = renderCount < displayedData.length ? 'flex' : 'none';
         }
@@ -460,10 +508,14 @@
             return `Rs. ${price} <span class="text-slate-400 text-xs font-normal">${type}</span>`;
         }
 
-        function renderCard(data, container) {
+        function renderCard(data, container, index = 0) {
             const isSold = data.status === 'sold'; const isFav = favorites.includes(data.id);
             const div = document.createElement('div');
-            div.className = "bg-white p-3 rounded-2xl shadow-sm border border-slate-100 active:scale-[0.98] transition cursor-pointer flex gap-4 group relative";
+            // Added land-card class for animation
+            div.className = "land-card bg-white p-3 rounded-2xl shadow-sm border border-slate-100 active:scale-[0.98] transition cursor-pointer flex gap-4 group relative";
+            // Set staggered animation delay
+            div.style.animationDelay = `${index * 0.1}s`;
+            
             div.innerHTML = `<div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 relative bg-slate-100"><img src="${data.imageUrls?.[0] || ''}" class="w-full h-full object-cover">${isSold ? '<div class="absolute inset-0 bg-red-500/50 flex items-center justify-center"><span class="bg-red-600 border border-white text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">SOLD</span></div>' : ''}${!isSold && data.isNew ? '<div class="absolute top-0 left-0 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br-lg shadow">NEW</div>' : ''}</div><div class="flex-1 flex flex-col justify-center min-w-0" onclick="openDetail(this.parentElement.data)"><h3 class="font-bold text-slate-800 text-lg leading-tight mb-1 truncate">${data.title}</h3><p class="text-xs text-slate-500 mb-1 truncate">📍 ${data.location}</p><p class="text-green-600 font-bold text-base">${formatPrice(data)}</p></div><button onclick="toggleFav('${data.id}', this)" class="absolute top-2 right-2 p-2 rounded-full ${isFav ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}"><i class="fas fa-heart"></i></button>`;
             div.data = data; container.appendChild(div);
         }
