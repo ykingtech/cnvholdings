@@ -11,7 +11,7 @@
         body { background: #f0f4f8; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 1.5rem; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1); }
         #map { height: 350px; width: 100%; border-radius: 1rem; z-index: 1; }
-        input, textarea, button { touch-action: manipulation; }
+        input, textarea, button, select { touch-action: manipulation; }
         .input-field { transition: all 0.3s ease; border: 2px solid #e2e8f0; }
         .input-field:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
         .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 99px; overflow: hidden; height: 10px; margin-top: 10px; }
@@ -23,25 +23,35 @@
 
     <header class="flex justify-between items-center mb-6 sticky top-0 bg-[#f0f4f8] z-50 py-2">
         <div><h1 class="text-2xl font-black text-slate-800 tracking-tight">Nexus<span class="text-blue-600">Admin</span></h1></div>
-        <a href="#" onclick="location.reload()" class="bg-white p-2 rounded-full shadow-sm text-slate-600"><i class="fas fa-redo"></i></a>
+        <a href="#" onclick="location.reload()" class="bg-white p-2 rounded-full shadow-sm text-slate-600"><i class="fas fa-plus"></i> New</a>
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div class="glass-panel p-6 relative">
-            <h2 class="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2"><i class="fas fa-plus-circle text-blue-600"></i> Add Property</h2>
+            <h2 class="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
+                <i class="fas fa-edit text-blue-600"></i> <span id="formTitle">Add Property</span>
+            </h2>
+            
             <form id="addLandForm" class="space-y-4">
-                <div class="grid gap-3">
-                    <input type="text" id="landTitle" placeholder="Title" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
-                    <input type="text" id="landLocation" placeholder="City" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
+                <input type="hidden" id="editId"> <div class="grid gap-3">
+                    <input type="text" id="landTitle" placeholder="Title (e.g. Land near Highway)" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
+                    <input type="text" id="landLocation" placeholder="City Display Name" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
                 </div>
+
                 <div class="flex gap-3">
-                    <div class="w-1/2 relative">
-                        <input type="number" step="any" id="landPerches" placeholder="Perches" class="w-full bg-white p-3 rounded-xl input-field outline-none pl-3" required>
-                        <span class="absolute right-3 top-3.5 text-xs text-slate-400 font-bold">P</span>
+                    <div class="w-1/2 flex gap-1">
+                        <input type="number" step="any" id="landSize" placeholder="Size" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
+                        <select id="sizeUnit" class="bg-slate-100 rounded-xl px-2 text-xs font-bold text-slate-600 outline-none border border-slate-200">
+                            <option value="perch">Perches</option>
+                            <option value="acre">Acres</option>
+                        </select>
                     </div>
-                    <div class="w-1/2 relative">
-                        <input type="number" id="landPrice" placeholder="Price/P" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
-                        <span class="absolute right-3 top-3.5 text-xs text-slate-400 font-bold">LKR</span>
+                    <div class="w-1/2 flex gap-1">
+                        <input type="number" id="landPrice" placeholder="Price" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
+                        <select id="priceType" class="bg-slate-100 rounded-xl px-2 text-xs font-bold text-slate-600 outline-none border border-slate-200">
+                            <option value="unit">Per Unit</option>
+                            <option value="total">Total</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -56,9 +66,9 @@
                     </div>
                 </div>
                 <input type="hidden" id="landLat"><input type="hidden" id="landLng">
-                <textarea id="landDesc" placeholder="Description..." rows="2" class="w-full bg-white p-3 rounded-xl input-field outline-none"></textarea>
+                <textarea id="landDesc" placeholder="Description..." rows="3" class="w-full bg-white p-3 rounded-xl input-field outline-none"></textarea>
 
-                <div>
+                <div id="photoSection">
                     <div class="border-2 border-dashed border-blue-200 bg-blue-50/50 p-4 rounded-xl text-center cursor-pointer hover:bg-blue-50 transition relative group">
                         <input type="file" id="imageInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                         <div class="space-y-1">
@@ -70,9 +80,12 @@
                     <div id="imagePreview" class="flex gap-2 mt-3 overflow-x-auto pb-2 hide-scrollbar"></div>
                 </div>
 
-                <button type="submit" id="saveBtn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-lg active:scale-95 transition flex justify-center items-center gap-2 text-lg">
-                    <span>Publish Now</span> <i class="fas fa-paper-plane"></i>
-                </button>
+                <div class="flex gap-2">
+                    <button type="button" onclick="location.reload()" id="cancelBtn" class="hidden w-1/3 bg-slate-200 text-slate-600 py-4 rounded-xl font-bold">Cancel</button>
+                    <button type="submit" id="saveBtn" class="flex-1 bg-slate-900 text-white py-4 rounded-xl font-bold shadow-lg active:scale-95 transition flex justify-center items-center gap-2 text-lg">
+                        <span>Publish Property</span> <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
             </form>
         </div>
 
@@ -83,7 +96,6 @@
     </div>
 
     <input type="file" id="extraImageInput" multiple accept="image/*" class="hidden">
-
     <div id="loadingOverlay" class="fixed inset-0 bg-white/95 backdrop-blur-sm z-[1000] hidden flex-col justify-center items-center p-8">
         <div class="w-full max-w-sm text-center">
             <h3 class="text-xl font-black text-slate-800 mb-2">Processing...</h3>
@@ -114,144 +126,172 @@
         };
         map.on('click', (e) => updateMarker(e.latlng.lat, e.latlng.lng));
         window.searchLocation = async () => {
-            const query = document.getElementById('mapSearchInput').value;
-            if(!query) return;
+            const query = document.getElementById('mapSearchInput').value; if(!query) return;
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&countrycodes=lk`);
                 const data = await res.json();
-                if(data && data.length > 0) {
-                    map.setView([data[0].lat, data[0].lon], 14);
-                    updateMarker(parseFloat(data[0].lat), parseFloat(data[0].lon));
-                } else alert("Location not found");
+                if(data && data.length > 0) { map.setView([data[0].lat, data[0].lon], 14); updateMarker(parseFloat(data[0].lat), parseFloat(data[0].lon)); } 
+                else alert("Location not found");
             } catch(e) { alert("Error searching"); }
         };
-        window.locateMe = () => {
-            if(!navigator.geolocation) return alert("GPS not supported");
-            navigator.geolocation.getCurrentPosition(pos => {
-                map.setView([pos.coords.latitude, pos.coords.longitude], 16);
-                updateMarker(pos.coords.latitude, pos.coords.longitude);
-            });
-        };
+        window.locateMe = () => { if(!navigator.geolocation) return alert("GPS not supported"); navigator.geolocation.getCurrentPosition(pos => { map.setView([pos.coords.latitude, pos.coords.longitude], 16); updateMarker(pos.coords.latitude, pos.coords.longitude); }); };
 
         // --- COMPRESSION ---
         const compressImage = (file) => new Promise((resolve, reject) => {
-            if(file.name.toLowerCase().endsWith('.heic')) { reject(new Error("HEIC not supported. Use JPG.")); return; }
+            if(file.name.toLowerCase().endsWith('.heic')) { reject(new Error("HEIC not supported")); return; }
             const reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = (e) => {
                 const img = new Image(); img.src = e.target.result;
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const scale = 600 / img.width; 
-                    canvas.width = 600; canvas.height = img.height * scale;
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                    const scale = 600 / img.width; canvas.width = 600; canvas.height = img.height * scale;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     resolve(canvas.toDataURL('image/jpeg', 0.6)); 
                 };
-                img.onerror = () => reject(new Error("Image load failed"));
+                img.onerror = () => reject(new Error("Image error"));
             };
-            reader.onerror = () => reject(new Error("File read failed"));
+            reader.onerror = () => reject(new Error("File error"));
         });
 
-        // --- SUBMIT ---
+        // --- ADD / UPDATE LOGIC ---
         document.getElementById('addLandForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const editId = document.getElementById('editId').value;
             const lat = document.getElementById('landLat').value;
             const files = document.getElementById('imageInput').files;
             
             if(!lat) return alert("Please pin location!");
-            
+
             const overlay = document.getElementById('loadingOverlay');
             const pBar = document.getElementById('progressBar');
-            const pText = document.getElementById('percentText');
             overlay.classList.remove('hidden'); overlay.classList.add('flex');
 
             try {
                 let imageUrls = [];
+                // If editing and no new files, keep old images logic is handled in update
                 if(files.length > 0) {
                     for(let i=0; i<files.length; i++) {
                         document.getElementById('loadingText').innerText = `Processing photo ${i+1}...`;
-                        const url = await compressImage(files[i]);
-                        imageUrls.push(url);
+                        try { imageUrls.push(await compressImage(files[i])); } catch(e){}
                         pBar.style.width = `${((i+1)/files.length)*80}%`;
                     }
                 }
-                if(imageUrls.length === 0) imageUrls.push("https://placehold.co/600x400?text=No+Image");
 
-                document.getElementById('loadingText').innerText = "Saving to Database...";
-                await addDoc(collection(db, "lands"), {
+                // Data Object
+                const landData = {
                     title: document.getElementById('landTitle').value,
                     location: document.getElementById('landLocation').value,
                     description: document.getElementById('landDesc').value,
-                    perches: parseFloat(document.getElementById('landPerches').value),
-                    pricePerPerch: document.getElementById('landPrice').value,
-                    status: 'available',
+                    size: parseFloat(document.getElementById('landSize').value),
+                    sizeUnit: document.getElementById('sizeUnit').value, // 'perch' or 'acre'
+                    price: document.getElementById('landPrice').value,
+                    priceType: document.getElementById('priceType').value, // 'unit' or 'total'
                     lat: parseFloat(lat), lng: parseFloat(document.getElementById('landLng').value),
-                    imageUrls: imageUrls, 
                     timestamp: new Date()
-                });
+                };
 
-                pBar.style.width = '100%'; pText.innerText = '100%';
-                setTimeout(() => { alert("Published! ✅"); location.reload(); }, 500);
+                // Sort Price Calculation (Base Price per Perch) for sorting
+                let basePrice = parseFloat(landData.price.replace(/,/g, ''));
+                if(landData.priceType === 'total') {
+                    const totalPerches = landData.sizeUnit === 'acre' ? landData.size * 160 : landData.size;
+                    basePrice = basePrice / totalPerches;
+                } else if(landData.sizeUnit === 'acre') {
+                    basePrice = basePrice / 160; // Convert Acre price to Perch Price
+                }
+                landData.sortPrice = basePrice;
 
-            } catch(e) { 
-                overlay.classList.add('hidden'); 
-                alert("Upload Failed: " + e.message + "\n(Check Firebase Console > Firestore > Rules)"); 
-            }
+                document.getElementById('loadingText').innerText = editId ? "Updating..." : "Saving...";
+
+                if(editId) {
+                    // Update Mode
+                    if(imageUrls.length > 0) landData.imageUrls = imageUrls; // Only replace images if new ones selected
+                    await updateDoc(doc(db, "lands", editId), landData);
+                    alert("Updated Successfully! ✅");
+                } else {
+                    // Add Mode
+                    if(imageUrls.length === 0) imageUrls.push("https://placehold.co/600x400?text=No+Image");
+                    landData.imageUrls = imageUrls;
+                    landData.status = 'available';
+                    await addDoc(collection(db, "lands"), landData);
+                    alert("Published Successfully! ✅");
+                }
+
+                location.reload();
+
+            } catch(e) { overlay.classList.add('hidden'); alert("Error: " + e.message); }
         });
 
-        // --- FETCH & ADD PHOTOS ---
+        // --- EDIT FUNCTION ---
+        window.editLand = async (id) => {
+            const docRef = doc(db, "lands", id);
+            const snap = await getDoc(docRef);
+            if(snap.exists()) {
+                const d = snap.data();
+                document.getElementById('editId').value = id;
+                document.getElementById('formTitle').innerText = "Edit Property";
+                document.getElementById('saveBtn').innerHTML = '<span>Update Property</span> <i class="fas fa-sync-alt"></i>';
+                document.getElementById('cancelBtn').classList.remove('hidden');
+                
+                document.getElementById('landTitle').value = d.title;
+                document.getElementById('landLocation').value = d.location;
+                document.getElementById('landSize').value = d.size || d.perches; // Fallback for old data
+                document.getElementById('sizeUnit').value = d.sizeUnit || 'perch';
+                document.getElementById('landPrice').value = d.price || d.pricePerPerch;
+                document.getElementById('priceType').value = d.priceType || 'unit';
+                document.getElementById('landDesc').value = d.description;
+                
+                updateMarker(d.lat, d.lng);
+                map.setView([d.lat, d.lng], 15);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+
+        // --- LISTING & PHOTO ADDITION ---
         let uploadTargetId = null;
         window.uploadMore = (id) => { uploadTargetId = id; document.getElementById('extraImageInput').click(); };
-
         document.getElementById('extraImageInput').addEventListener('change', async function() {
             if(!uploadTargetId || this.files.length === 0) return;
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.classList.remove('hidden'); overlay.classList.add('flex');
-            document.getElementById('loadingText').innerText = "Adding photos...";
+            const overlay = document.getElementById('loadingOverlay'); overlay.classList.remove('hidden'); overlay.classList.add('flex');
             try {
-                const newUrls = [];
-                for(let file of this.files) { newUrls.push(await compressImage(file)); }
+                const newUrls = []; for(let file of this.files) newUrls.push(await compressImage(file));
                 const docRef = doc(db, "lands", uploadTargetId);
                 const snap = await getDoc(docRef);
                 let currentImgs = snap.data().imageUrls || [];
                 currentImgs = currentImgs.filter(u => !u.includes("placehold.co"));
                 await updateDoc(docRef, { imageUrls: [...currentImgs, ...newUrls] });
                 alert("Photos Added! 📸"); location.reload();
-            } catch(e) { overlay.classList.add('hidden'); alert("Error: " + e.message); }
+            } catch(e) { overlay.classList.add('hidden'); alert("Error"); }
         });
 
         async function fetchLands() {
             const list = document.getElementById('manageList');
-            try {
-                const q = query(collection(db, "lands"), orderBy("timestamp", "desc"));
-                const snap = await getDocs(q);
-                list.innerHTML = '';
-                if(snap.empty) { list.innerHTML = '<p class="text-center text-slate-400">No lands found.</p>'; return; }
-                
-                snap.forEach(d => {
-                    const data = d.data();
-                    const isSold = data.status === 'sold';
-                    const div = document.createElement('div');
-                    div.className = `flex justify-between items-center p-3 rounded-xl border ${isSold ? 'bg-red-50' : 'bg-white'}`;
-                    div.innerHTML = `
-                        <div class="flex items-center gap-3">
-                             <img src="${data.imageUrls[0]}" class="w-12 h-12 rounded object-cover border">
-                             <div><p class="font-bold text-sm">${data.title}</p><p class="text-xs text-gray-500">${data.location}</p></div>
-                        </div>
-                        <div class="flex gap-2">
-                            ${!isSold ? `<button onclick="uploadMore('${d.id}')" class="bg-blue-50 text-blue-600 border border-blue-200 w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-camera"></i></button><button onclick="markSold('${d.id}')" class="bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded text-xs font-bold">Sold</button>` : '<span class="text-red-500 font-bold text-xs">SOLD</span>'}
-                        </div>
-                    `;
-                    list.appendChild(div);
-                });
-            } catch(e) {
-                list.innerHTML = `<p class="text-center text-red-500 text-xs">Error loading data. Check Firebase Rules.<br>${e.message}</p>`;
-            }
+            const q = query(collection(db, "lands"), orderBy("timestamp", "desc"));
+            const snap = await getDocs(q);
+            list.innerHTML = '';
+            
+            snap.forEach(d => {
+                const data = d.data();
+                const isSold = data.status === 'sold';
+                const div = document.createElement('div');
+                div.className = `flex justify-between items-center p-3 rounded-xl border ${isSold ? 'bg-red-50' : 'bg-white'}`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                         <img src="${data.imageUrls?.[0] || ''}" class="w-12 h-12 rounded object-cover border">
+                         <div><p class="font-bold text-sm">${data.title}</p><p class="text-xs text-gray-500">${data.location}</p></div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${!isSold ? `
+                            <button onclick="editLand('${d.id}')" class="bg-yellow-50 text-yellow-600 border border-yellow-200 w-8 h-8 rounded-full flex items-center justify-center hover:bg-yellow-100"><i class="fas fa-pen"></i></button>
+                            <button onclick="uploadMore('${d.id}')" class="bg-blue-50 text-blue-600 border border-blue-200 w-8 h-8 rounded-full flex items-center justify-center hover:bg-blue-100"><i class="fas fa-camera"></i></button>
+                            <button onclick="markSold('${d.id}')" class="bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded text-xs font-bold">Sold</button>
+                        ` : '<span class="text-red-500 font-bold text-xs">SOLD</span>'}
+                    </div>
+                `;
+                list.appendChild(div);
+            });
         }
-        
         window.markSold = async(id) => { if(confirm("Mark Sold?")) { await updateDoc(doc(db,"lands",id), {status:'sold', soldAt:new Date().toISOString()}); fetchLands(); }};
         document.getElementById('imageInput').addEventListener('change', function() { document.getElementById('fileCount').innerText = `${this.files.length} selected`; });
-
         fetchLands();
     </script>
 </body>
