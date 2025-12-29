@@ -430,6 +430,9 @@
                     updateMapMarkers(displayedData); 
                     showFloatingCard(data); 
                     map.flyTo([data.lat, data.lng], 14); 
+
+                    // --- NEW: TRIGGER NEARBY POPUP ON CLICK ---
+                    calcDistanceOnMap(data.lat, data.lng);
                 });
                 marker.addTo(landLayer);
             });
@@ -528,10 +531,8 @@
         window.openDetail = (data) => { 
             currentLand = data; currentImgs = data.imageUrls; idx = 0; 
             
-            // --- FIX START: SET BLUE MARKER ON SELECT ---
             selectedLandId = data.id; 
             updateMapMarkers(displayedData); 
-            // --- FIX END ---
 
             document.getElementById('mapFloatCard').classList.add('hidden'); 
             document.getElementById('detailImg').src = currentImgs[0]; 
