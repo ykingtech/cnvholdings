@@ -19,9 +19,9 @@
             box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
         }
 
-        #map { height: 300px; width: 100%; border-radius: 1rem; z-index: 1; }
+        #map { height: 350px; width: 100%; border-radius: 1rem; z-index: 1; }
         
-        /* Mobile Touch Optimizations */
+        /* Inputs & Buttons */
         input, textarea, button { touch-action: manipulation; }
         .input-field {
             transition: all 0.3s ease;
@@ -32,16 +32,22 @@
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         }
 
-        /* Loading Spinner */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
+        /* Progress Bar Animation */
+        .progress-container {
+            width: 100%;
+            background-color: #e2e8f0;
+            border-radius: 99px;
+            overflow: hidden;
+            height: 10px;
+            margin-top: 10px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 99px;
+        }
 
         /* Floating GPS Button */
         .gps-btn {
@@ -50,23 +56,20 @@
             right: 20px;
             z-index: 500;
             background: white;
-            padding: 10px;
+            padding: 12px;
             border-radius: 50%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
             cursor: pointer;
         }
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-6xl mx-auto pb-24">
 
-    <header class="flex justify-between items-center mb-8 sticky top-0 bg-[#f0f4f8] z-50 py-2">
+    <header class="flex justify-between items-center mb-6 sticky top-0 bg-[#f0f4f8] z-50 py-2">
         <div>
             <h1 class="text-2xl font-black text-slate-800 tracking-tight">Nexus<span class="text-blue-600">Admin</span></h1>
-            <p class="text-slate-500 text-xs font-medium mt-1">Manage Real Estate Smartly</p>
         </div>
-        <div id="statusIndicator" class="hidden bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-            ● Live
-        </div>
+        <a href="#" onclick="location.reload()" class="bg-white p-2 rounded-full shadow-sm text-slate-600"><i class="fas fa-redo"></i></a>
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -77,81 +80,81 @@
             </h2>
             
             <form id="addLandForm" class="space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Basic Info</label>
-                    <div class="grid gap-3 mt-1">
-                        <input type="text" id="landTitle" placeholder="Title (e.g. Land near Highway)" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
-                        <input type="text" id="landLocation" placeholder="City / Area" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
-                    </div>
+                <div class="grid gap-3">
+                    <input type="text" id="landTitle" placeholder="Title (e.g. Land near Highway)" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
+                    <input type="text" id="landLocation" placeholder="City Display Name" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
                 </div>
 
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Details</label>
-                    <div class="flex gap-3 mt-1">
-                        <div class="w-1/2 relative">
-                            <input type="number" step="any" id="landPerches" placeholder="Perches" class="w-full bg-white p-3 rounded-xl input-field outline-none pl-3" required>
-                            <span class="absolute right-3 top-3.5 text-xs text-slate-400 font-bold">P</span>
-                        </div>
-                        <div class="w-1/2 relative">
-                            <input type="number" id="landPrice" placeholder="Price/P" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
-                            <span class="absolute right-3 top-3.5 text-xs text-slate-400 font-bold">LKR</span>
-                        </div>
+                <div class="flex gap-3">
+                    <div class="w-1/2 relative">
+                        <input type="number" step="any" id="landPerches" placeholder="Perches" class="w-full bg-white p-3 rounded-xl input-field outline-none pl-3" required>
+                        <span class="absolute right-3 top-3.5 text-xs text-slate-400 font-bold">P</span>
+                    </div>
+                    <div class="w-1/2 relative">
+                        <input type="number" id="landPrice" placeholder="Price/P" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
+                        <span class="absolute right-3 top-3.5 text-xs text-slate-400 font-bold">LKR</span>
                     </div>
                 </div>
-
-                <textarea id="landDesc" placeholder="Description (Water, Electricity, Deeds...)" rows="3" class="w-full bg-white p-3 rounded-xl input-field outline-none"></textarea>
                 
-                <div class="relative rounded-xl overflow-hidden border-2 border-slate-200">
-                    <div id="map"></div>
-                    <button type="button" onclick="locateMe()" class="gps-btn hover:bg-blue-50 active:scale-95 transition">
-                        <i class="fas fa-crosshairs text-blue-600 text-xl"></i>
-                    </button>
-                    <div class="absolute top-2 left-2 bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-xs font-bold z-[400] shadow-sm">
-                        📍 Tap or use GPS
+                <div class="bg-white p-2 rounded-2xl border-2 border-slate-200">
+                    <div class="flex gap-2 mb-2">
+                        <input type="text" id="mapSearchInput" placeholder="Search Town (e.g. Malabe)" class="flex-1 bg-slate-100 px-3 py-2 rounded-lg text-sm outline-none border focus:border-blue-400">
+                        <button type="button" onclick="searchLocation()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold"><i class="fas fa-search"></i></button>
+                    </div>
+
+                    <div class="relative rounded-xl overflow-hidden border border-slate-200">
+                        <div id="map"></div>
+                        
+                        <button type="button" onclick="locateMe()" class="gps-btn hover:bg-blue-50 active:scale-95 transition">
+                            <i class="fas fa-crosshairs text-blue-600 text-xl"></i>
+                        </button>
+                        
+                        <div class="absolute top-2 left-2 bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-xs font-bold z-[400] shadow-sm text-slate-700">
+                            📍 Tap map to pin exact spot
+                        </div>
                     </div>
                 </div>
+                
                 <input type="hidden" id="landLat"><input type="hidden" id="landLng">
+                <textarea id="landDesc" placeholder="Description..." rows="2" class="w-full bg-white p-3 rounded-xl input-field outline-none"></textarea>
 
                 <div>
                     <div class="border-2 border-dashed border-blue-200 bg-blue-50/50 p-4 rounded-xl text-center cursor-pointer hover:bg-blue-50 transition relative group">
                         <input type="file" id="imageInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                         <div class="space-y-1">
-                            <i class="fas fa-cloud-upload-alt text-3xl text-blue-400 group-hover:scale-110 transition"></i>
-                            <p class="text-blue-600 font-bold text-sm">Tap to Select Photos</p>
-                            <p class="text-xs text-slate-400">Auto-compressed for speed</p>
+                            <i class="fas fa-images text-2xl text-blue-400"></i>
+                            <p class="text-blue-600 font-bold text-sm">Select Photos</p>
+                            <p id="fileCount" class="text-xs text-slate-400">0 selected</p>
                         </div>
                     </div>
                     <div id="imagePreview" class="flex gap-2 mt-3 overflow-x-auto pb-2 hide-scrollbar"></div>
                 </div>
 
-                <button type="submit" id="saveBtn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-lg shadow-slate-900/20 active:scale-95 transition flex justify-center items-center gap-2 text-lg">
-                    <span>Publish Now</span> <i class="fas fa-paper-plane"></i>
+                <button type="submit" id="saveBtn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-lg active:scale-95 transition flex justify-center items-center gap-2 text-lg">
+                    <span>Publish Property</span> <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
         </div>
 
         <div class="glass-panel p-6">
-            <div class="flex justify-between items-end mb-5 border-b pb-2">
-                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fas fa-tasks text-blue-600"></i> Active Listings
-                </h2>
-                <button onclick="fetchAndCleanLands()" class="text-xs bg-slate-100 p-2 rounded-lg hover:bg-slate-200"><i class="fas fa-sync-alt"></i> Refresh</button>
-            </div>
-            
+            <h2 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Listing Management</h2>
             <div id="manageList" class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                <div class="text-center py-10">
-                    <div class="loader mx-auto mb-3"></div>
-                    <p class="text-slate-400 text-sm">Loading properties...</p>
-                </div>
+                <p class="text-center text-slate-400 py-10">Loading...</p>
             </div>
         </div>
 
     </div>
 
-    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-[1000] hidden flex-col justify-center items-center">
-        <div class="loader w-12 h-12 border-blue-600 border-t-transparent mb-4"></div>
-        <h3 class="text-xl font-bold text-slate-800">Processing...</h3>
-        <p class="text-sm text-slate-500" id="loadingText">Compressing images...</p>
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/95 backdrop-blur-sm z-[1000] hidden flex-col justify-center items-center p-8">
+        <div class="w-full max-w-sm text-center">
+            <h3 class="text-xl font-black text-slate-800 mb-2">Publishing...</h3>
+            <p id="loadingText" class="text-sm text-slate-500 mb-4">Compressing images</p>
+            
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <p id="percentText" class="text-xs font-bold text-blue-600 mt-2 text-right">0%</p>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -163,7 +166,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- MAP SETUP & GPS ---
+        // --- MAP FUNCTIONS ---
         const map = L.map('map').setView([6.9271, 79.8612], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         let marker;
@@ -171,36 +174,66 @@
         const updateMarker = (lat, lng) => {
             if(marker) map.removeLayer(marker);
             marker = L.marker([lat, lng]).addTo(map);
-            map.setView([lat, lng], 16);
             document.getElementById('landLat').value = lat;
             document.getElementById('landLng').value = lng;
         };
 
         map.on('click', (e) => updateMarker(e.latlng.lat, e.latlng.lng));
 
+        // 1. Location Search Function
+        window.searchLocation = async () => {
+            const query = document.getElementById('mapSearchInput').value;
+            if(!query) return;
+            
+            const btn = event.target.closest('button'); // Get button for animation
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; // Loading icon
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&countrycodes=lk`); // Limit to Sri Lanka
+                const data = await res.json();
+                
+                if(data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    map.setView([lat, lon], 14); // Move map
+                    updateMarker(lat, lon); // Auto-pin center
+                } else {
+                    alert("Location not found! Try a nearby main city.");
+                }
+            } catch(e) {
+                alert("Search failed. Check internet.");
+            }
+            btn.innerHTML = originalIcon;
+        };
+
+        // 2. GPS Function
         window.locateMe = () => {
             if(!navigator.geolocation) return alert("GPS not supported");
             navigator.geolocation.getCurrentPosition(
-                (pos) => updateMarker(pos.coords.latitude, pos.coords.longitude),
-                () => alert("Unable to get location. Please enable GPS.")
+                (pos) => {
+                    map.setView([pos.coords.latitude, pos.coords.longitude], 16);
+                    updateMarker(pos.coords.latitude, pos.coords.longitude);
+                },
+                () => alert("Please enable Location Services.")
             );
         };
 
-        // --- OPTIMIZED IMAGE HANDLING ---
-        // Generates preview thumbnails instantly
-        document.getElementById('imageInput').addEventListener('change', function(e) {
+        // --- IMAGE HANDLING ---
+        document.getElementById('imageInput').addEventListener('change', function() {
             const previewDiv = document.getElementById('imagePreview');
             previewDiv.innerHTML = '';
+            document.getElementById('fileCount').innerText = `${this.files.length} selected`;
+            
             Array.from(this.files).forEach(file => {
                 const url = URL.createObjectURL(file);
                 const img = document.createElement('img');
                 img.src = url;
-                img.className = 'w-16 h-16 rounded-lg object-cover border border-slate-200 shadow-sm';
+                img.className = 'w-16 h-16 rounded-lg object-cover border shadow-sm';
                 previewDiv.appendChild(img);
             });
         });
 
-        // Faster Compression Logic
         const compressImage = (file) => new Promise((resolve) => {
             const reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = (e) => {
@@ -208,117 +241,58 @@
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    // Reduced max-width to 600px for faster mobile loading & uploading
-                    const scale = 600 / img.width; 
-                    canvas.width = 600; canvas.height = img.height * scale;
+                    const scale = 650 / img.width; 
+                    canvas.width = 650; canvas.height = img.height * scale;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    // Quality 0.6 is the sweet spot for Real Estate (clear but small file size)
                     resolve(canvas.toDataURL('image/jpeg', 0.6)); 
                 };
             };
         });
 
-        // --- DATA MANAGEMENT ---
-        window.fetchAndCleanLands = async () => {
-            const listDiv = document.getElementById('manageList');
-            // Don't clear immediately, just show loading if empty
-            if(!listDiv.innerHTML.trim()) listDiv.innerHTML = '<div class="loader mx-auto"></div>';
-            
-            try {
-                // Order by timestamp to show newest first
-                const q = query(collection(db, "lands"), orderBy("timestamp", "desc"));
-                const snap = await getDocs(q);
-                
-                listDiv.innerHTML = '';
-                const now = new Date();
-
-                if(snap.empty) {
-                    listDiv.innerHTML = '<p class="text-center text-slate-400 py-4">No properties found.</p>';
-                    return;
-                }
-
-                snap.forEach(async (d) => {
-                    const data = d.data();
-                    const id = d.id;
-
-                    // Auto Delete Logic (3 Days)
-                    if (data.status === 'sold' && data.soldAt) {
-                        const soldDate = new Date(data.soldAt.seconds ? data.soldAt.seconds * 1000 : data.soldAt);
-                        const diffDays = Math.ceil(Math.abs(now - soldDate) / (1000 * 60 * 60 * 24)); 
-                        if (diffDays > 3) {
-                            await deleteDoc(doc(db, "lands", id));
-                            return; // Don't render deleted item
-                        }
-                    }
-
-                    const isSold = data.status === 'sold';
-                    const mainImg = data.imageUrls ? data.imageUrls[0] : (data.imageUrl || '');
-
-                    const el = document.createElement('div');
-                    el.className = `flex justify-between items-center p-3 rounded-xl border shadow-sm transition-all hover:shadow-md ${isSold ? 'bg-red-50 border-red-100 opacity-75' : 'bg-white border-slate-100'}`;
-                    el.innerHTML = `
-                        <div class="flex gap-3 items-center overflow-hidden">
-                            <div class="w-12 h-12 flex-shrink-0 bg-slate-200 rounded-lg overflow-hidden">
-                                <img src="${mainImg}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="min-w-0">
-                                <p class="font-bold text-slate-800 text-sm truncate">${data.title}</p>
-                                <p class="text-xs text-slate-500 truncate">${data.perches} P @ ${data.location}</p>
-                            </div>
-                        </div>
-                        <div class="flex-shrink-0 ml-2">
-                             ${!isSold ? 
-                                `<button onclick="markSold('${id}')" class="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 active:scale-95 transition">Mark Sold</button>` 
-                                : `<span class="text-xs font-bold text-red-400 bg-red-100 px-2 py-1 rounded">SOLD</span>`}
-                        </div>
-                    `;
-                    listDiv.appendChild(el);
-                });
-            } catch (e) {
-                console.error(e);
-                listDiv.innerHTML = '<p class="text-center text-red-400">Error loading data.</p>';
-            }
-        };
-
-        window.markSold = async (id) => {
-            if(confirm("Confirm: Mark as SOLD?")) {
-                const btn = event.target;
-                btn.innerText = "...";
-                await updateDoc(doc(db, "lands", id), { status: 'sold', soldAt: new Date().toISOString() });
-                fetchAndCleanLands();
-            }
-        };
-
-        // --- SUBMIT FORM ---
+        // --- SUBMIT & PROGRESS BAR ---
         document.getElementById('addLandForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const lat = document.getElementById('landLat').value;
             const files = document.getElementById('imageInput').files;
             
-            if(!lat) return alert("⚠️ Please pin the location on the map.");
-            if(files.length === 0) return alert("⚠️ Please select at least one photo.");
+            if(!lat) return alert("Please pin the location on the map!");
+            if(files.length === 0) return alert("Select at least 1 photo!");
 
-            // Show Loading
-            const loader = document.getElementById('loadingOverlay');
+            // UI Elements
+            const overlay = document.getElementById('loadingOverlay');
+            const pBar = document.getElementById('progressBar');
+            const pText = document.getElementById('percentText');
             const loadText = document.getElementById('loadingText');
-            loader.classList.remove('hidden');
-            loader.classList.add('flex');
+
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
 
             try {
-                loadText.innerText = `Compressing ${files.length} images...`;
+                // Step 1: Compress & Process Images
+                const imageUrls = [];
+                const totalFiles = files.length;
                 
-                // Process images in parallel
-                const imagePromises = Array.from(files).map(file => compressImage(file));
-                const imageUrls = await Promise.all(imagePromises);
+                for(let i = 0; i < totalFiles; i++) {
+                    loadText.innerText = `Processing image ${i+1} of ${totalFiles}...`;
+                    const compressed = await compressImage(files[i]);
+                    imageUrls.push(compressed);
+                    
+                    // Update Progress (0% to 80%)
+                    const progress = ((i + 1) / totalFiles) * 80;
+                    pBar.style.width = `${progress}%`;
+                    pText.innerText = `${Math.round(progress)}%`;
+                }
 
-                loadText.innerText = "Uploading to Database...";
+                // Step 2: Database Upload
+                loadText.innerText = "Finalizing upload...";
+                pBar.style.width = '90%';
+                pText.innerText = '90%';
 
                 await addDoc(collection(db, "lands"), {
                     title: document.getElementById('landTitle').value,
                     location: document.getElementById('landLocation').value,
                     description: document.getElementById('landDesc').value,
-                    perches: parseFloat(document.getElementById('landPerches').value), // Correct Decimal Storage
+                    perches: parseFloat(document.getElementById('landPerches').value),
                     pricePerPerch: document.getElementById('landPrice').value,
                     status: 'available',
                     lat: parseFloat(lat), 
@@ -327,19 +301,58 @@
                     timestamp: new Date()
                 });
 
-                loader.classList.add('hidden');
-                alert("Success! Property Published. 🏠"); 
-                location.reload();
+                // Complete
+                pBar.style.width = '100%';
+                pText.innerText = '100%';
+                setTimeout(() => {
+                    alert("Published Successfully! ✅");
+                    location.reload();
+                }, 500);
 
             } catch (err) { 
-                loader.classList.add('hidden');
-                console.error(err);
+                overlay.classList.add('hidden');
                 alert("Error: " + err.message); 
             }
         });
 
-        // Initial Load
-        fetchAndCleanLands();
+        // --- LOAD DATA ---
+        async function fetchLands() {
+            const list = document.getElementById('manageList');
+            const q = query(collection(db, "lands"), orderBy("timestamp", "desc"));
+            const snap = await getDocs(q);
+            
+            list.innerHTML = '';
+            if(snap.empty) { list.innerHTML = '<p class="text-center text-slate-400">No lands found.</p>'; return; }
+
+            snap.forEach(d => {
+                const data = d.data();
+                const isSold = data.status === 'sold';
+                
+                // Render Logic
+                const div = document.createElement('div');
+                div.className = `flex justify-between items-center p-3 rounded-xl border ${isSold ? 'bg-red-50 border-red-200 opacity-60' : 'bg-white border-slate-100'}`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                         <img src="${data.imageUrls[0]}" class="w-10 h-10 rounded object-cover">
+                         <div>
+                            <p class="font-bold text-sm text-slate-800">${data.title}</p>
+                            <p class="text-xs text-slate-500">${data.location}</p>
+                         </div>
+                    </div>
+                    ${!isSold ? `<button onclick="markSold('${d.id}')" class="text-xs font-bold text-red-500 bg-red-100 px-3 py-1 rounded hover:bg-red-200">Sold</button>` : ''}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        window.markSold = async (id) => {
+            if(confirm("Mark as SOLD?")) {
+                await updateDoc(doc(db, "lands", id), { status: 'sold', soldAt: new Date().toISOString() });
+                fetchLands();
+            }
+        }
+
+        fetchLands();
     </script>
 </body>
 </html>
