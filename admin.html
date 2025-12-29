@@ -31,7 +31,7 @@
                 <input type="text" id="landTitle" placeholder="Title (e.g. Land in Malabe)" class="w-full bg-slate-50 p-3 rounded-xl border outline-none focus:border-blue-500" required>
                 <input type="text" id="landLocation" placeholder="City" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
                 <div class="flex gap-2">
-                    <input type="number" id="landPerches" placeholder="Perches" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
+                    <input type="number" step="any" id="landPerches" placeholder="Perches (e.g. 10.5)" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
                     <input type="text" id="landPrice" placeholder="Price/Perch" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
                 </div>
                 <textarea id="landDesc" placeholder="Description..." rows="3" class="w-full bg-slate-50 p-3 rounded-xl border outline-none"></textarea>
@@ -81,7 +81,7 @@
             document.getElementById('landLng').value = e.latlng.lng;
         });
 
-        // 1. Image Compression
+        // 1. Image Compression (Optimized)
         const compressImage = (file) => new Promise((resolve) => {
             const reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = (e) => {
@@ -89,10 +89,12 @@
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const scale = 800 / img.width;
-                    canvas.width = 800; canvas.height = img.height * scale;
+                    // Slightly reduced max-width for speed (800 -> 700 is barely noticeable but faster)
+                    const scale = 700 / img.width; 
+                    canvas.width = 700; canvas.height = img.height * scale;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    // Quality 0.5 is good balance for speed/quality
+                    resolve(canvas.toDataURL('image/jpeg', 0.5)); 
                 };
             };
         });
@@ -112,14 +114,14 @@
 
                 // --- AUTO DELETE LOGIC (3 Days) ---
                 if (data.status === 'sold' && data.soldAt) {
-                    const soldDate = new Date(data.soldAt.seconds ? data.soldAt.seconds * 1000 : data.soldAt); // Handle Firestore Timestamp
+                    const soldDate = new Date(data.soldAt.seconds ? data.soldAt.seconds * 1000 : data.soldAt);
                     const diffTime = Math.abs(now - soldDate);
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
 
                     if (diffDays > 3) {
                         await deleteDoc(doc(db, "lands", id));
                         deletedCount++;
-                        return; // Don't show in list
+                        return;
                     }
                 }
 
@@ -143,18 +145,18 @@
             if(deletedCount > 0) document.getElementById('statusMsg').innerText = `🧹 Cleaned up ${deletedCount} old sold listings.`;
         }
 
-        // 3. Mark as Sold Function (Attached to window)
+        // 3. Mark as Sold Function
         window.markSold = async (id) => {
             if(confirm("Mark this property as SOLD? It will be deleted automatically after 3 days.")) {
                 await updateDoc(doc(db, "lands", id), {
                     status: 'sold',
-                    soldAt: new Date().toISOString() // Save current time
+                    soldAt: new Date().toISOString()
                 });
-                fetchAndCleanLands(); // Refresh list
+                fetchAndCleanLands();
             }
         };
 
-        // 4. Add New Land
+        // 4. Add New Land (Optimized for Speed)
         document.getElementById('addLandForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
@@ -162,33 +164,37 @@
             const files = document.getElementById('imageInput').files;
 
             if(!lat || files.length === 0) return alert("Location & Photos required!");
-            btn.innerText = "Processing..."; btn.disabled = true;
+            btn.innerText = "Compressing & Publishing..."; btn.disabled = true;
 
             try {
-                const imageUrls = [];
-                for(let file of files) imageUrls.push(await compressImage(file));
+                // CHANGE 2: Parallel Image Processing (Much Faster)
+                const imagePromises = Array.from(files).map(file => compressImage(file));
+                const imageUrls = await Promise.all(imagePromises);
 
                 await addDoc(collection(db, "lands"), {
                     title: document.getElementById('landTitle').value,
                     location: document.getElementById('landLocation').value,
                     description: document.getElementById('landDesc').value,
-                    perches: document.getElementById('landPerches').value,
+                    perches: document.getElementById('landPerches').value, // Now accepts decimals
                     pricePerPerch: document.getElementById('landPrice').value,
-                    status: 'available', // Default
+                    status: 'available',
                     lat: parseFloat(lat), lng: parseFloat(document.getElementById('landLng').value),
                     imageUrls: imageUrls, 
                     timestamp: new Date()
                 });
                 alert("Published! ✅"); 
                 location.reload();
-            } catch (err) { alert(err.message); btn.disabled = false; }
+            } catch (err) { 
+                alert(err.message); 
+                btn.innerText = "Publish Property";
+                btn.disabled = false; 
+            }
         });
 
         document.getElementById('imageInput').addEventListener('change', function() {
             document.getElementById('fileCount').innerText = `${this.files.length} Photos Selected`;
         });
 
-        // Initial Load
         fetchAndCleanLands();
     </script>
 </body>
