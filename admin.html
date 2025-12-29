@@ -2,86 +2,205 @@
 <html lang="si">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Admin | Manage & Add</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nexus Admin | Smart Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #f8fafc; font-family: sans-serif; }
-        #map { height: 350px; width: 100%; border-radius: 1rem; border: 2px solid #cbd5e1; }
-        .glass-panel { background: white; border: 1px solid #e2e8f0; border-radius: 1.5rem; }
+        body { background: #f0f4f8; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* Glassmorphism Cards */
+        .glass-panel { 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 1.5rem; 
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
+        }
+
+        #map { height: 300px; width: 100%; border-radius: 1rem; z-index: 1; }
+        
+        /* Mobile Touch Optimizations */
+        input, textarea, button { touch-action: manipulation; }
+        .input-field {
+            transition: all 0.3s ease;
+            border: 2px solid #e2e8f0;
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Floating GPS Button */
+        .gps-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 500;
+            background: white;
+            padding: 10px;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
     </style>
 </head>
-<body class="p-6 md:p-12 max-w-7xl mx-auto">
+<body class="p-4 md:p-8 max-w-6xl mx-auto pb-24">
 
-    <header class="flex justify-between items-center mb-10">
+    <header class="flex justify-between items-center mb-8 sticky top-0 bg-[#f0f4f8] z-50 py-2">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Admin Dashboard 🛠️</h1>
-            <p class="text-slate-500 text-sm">Sold lands auto-delete after 3 days.</p>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Nexus<span class="text-blue-600">Admin</span></h1>
+            <p class="text-slate-500 text-xs font-medium mt-1">Manage Real Estate Smartly</p>
         </div>
-        <div id="statusMsg" class="text-sm font-bold text-green-600"></div>
+        <div id="statusIndicator" class="hidden bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+            ● Live
+        </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        <div class="glass-panel p-8 shadow-xl h-fit">
-            <h2 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">➕ Add New Property</h2>
+        <div class="glass-panel p-6 relative">
+            <h2 class="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
+                <i class="fas fa-plus-circle text-blue-600"></i> Add Property
+            </h2>
             
             <form id="addLandForm" class="space-y-4">
-                <input type="text" id="landTitle" placeholder="Title (e.g. Land in Malabe)" class="w-full bg-slate-50 p-3 rounded-xl border outline-none focus:border-blue-500" required>
-                <input type="text" id="landLocation" placeholder="City" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
-                <div class="flex gap-2">
-                    <input type="number" step="any" id="landPerches" placeholder="Perches (e.g. 10.5)" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
-                    <input type="text" id="landPrice" placeholder="Price/Perch" class="w-full bg-slate-50 p-3 rounded-xl border outline-none" required>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Basic Info</label>
+                    <div class="grid gap-3 mt-1">
+                        <input type="text" id="landTitle" placeholder="Title (e.g. Land near Highway)" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
+                        <input type="text" id="landLocation" placeholder="City / Area" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
+                    </div>
                 </div>
-                <textarea id="landDesc" placeholder="Description..." rows="3" class="w-full bg-slate-50 p-3 rounded-xl border outline-none"></textarea>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Details</label>
+                    <div class="flex gap-3 mt-1">
+                        <div class="w-1/2 relative">
+                            <input type="number" step="any" id="landPerches" placeholder="Perches" class="w-full bg-white p-3 rounded-xl input-field outline-none pl-3" required>
+                            <span class="absolute right-3 top-3.5 text-xs text-slate-400 font-bold">P</span>
+                        </div>
+                        <div class="w-1/2 relative">
+                            <input type="number" id="landPrice" placeholder="Price/P" class="w-full bg-white p-3 rounded-xl input-field outline-none" required>
+                            <span class="absolute right-3 top-3.5 text-xs text-slate-400 font-bold">LKR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <textarea id="landDesc" placeholder="Description (Water, Electricity, Deeds...)" rows="3" class="w-full bg-white p-3 rounded-xl input-field outline-none"></textarea>
                 
-                <div id="map"></div>
-                <p class="text-xs text-center text-slate-500">📍 Tap map to pin location</p>
+                <div class="relative rounded-xl overflow-hidden border-2 border-slate-200">
+                    <div id="map"></div>
+                    <button type="button" onclick="locateMe()" class="gps-btn hover:bg-blue-50 active:scale-95 transition">
+                        <i class="fas fa-crosshairs text-blue-600 text-xl"></i>
+                    </button>
+                    <div class="absolute top-2 left-2 bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-xs font-bold z-[400] shadow-sm">
+                        📍 Tap or use GPS
+                    </div>
+                </div>
                 <input type="hidden" id="landLat"><input type="hidden" id="landLng">
 
-                <div class="border-2 border-dashed border-slate-300 p-4 rounded-xl text-center cursor-pointer hover:bg-blue-50 transition relative">
-                    <input type="file" id="imageInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <p class="text-blue-600 font-bold">📸 Select Photos</p>
-                    <p id="fileCount" class="text-xs text-slate-400">Max 3 recommended</p>
+                <div>
+                    <div class="border-2 border-dashed border-blue-200 bg-blue-50/50 p-4 rounded-xl text-center cursor-pointer hover:bg-blue-50 transition relative group">
+                        <input type="file" id="imageInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div class="space-y-1">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-blue-400 group-hover:scale-110 transition"></i>
+                            <p class="text-blue-600 font-bold text-sm">Tap to Select Photos</p>
+                            <p class="text-xs text-slate-400">Auto-compressed for speed</p>
+                        </div>
+                    </div>
+                    <div id="imagePreview" class="flex gap-2 mt-3 overflow-x-auto pb-2 hide-scrollbar"></div>
                 </div>
 
-                <button type="submit" id="saveBtn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition">
-                    Publish Property
+                <button type="submit" id="saveBtn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-lg shadow-slate-900/20 active:scale-95 transition flex justify-center items-center gap-2 text-lg">
+                    <span>Publish Now</span> <i class="fas fa-paper-plane"></i>
                 </button>
             </form>
         </div>
 
-        <div class="glass-panel p-8 shadow-xl">
-            <h2 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">⚙️ Manage Listings</h2>
-            <div id="manageList" class="space-y-4 max-h-[800px] overflow-y-auto pr-2">
-                <p class="text-slate-400 text-center py-10">Loading current lands...</p>
+        <div class="glass-panel p-6">
+            <div class="flex justify-between items-end mb-5 border-b pb-2">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-tasks text-blue-600"></i> Active Listings
+                </h2>
+                <button onclick="fetchAndCleanLands()" class="text-xs bg-slate-100 p-2 rounded-lg hover:bg-slate-200"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+            
+            <div id="manageList" class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                <div class="text-center py-10">
+                    <div class="loader mx-auto mb-3"></div>
+                    <p class="text-slate-400 text-sm">Loading properties...</p>
+                </div>
             </div>
         </div>
 
     </div>
 
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-[1000] hidden flex-col justify-center items-center">
+        <div class="loader w-12 h-12 border-blue-600 border-t-transparent mb-4"></div>
+        <h3 class="text-xl font-bold text-slate-800">Processing...</h3>
+        <p class="text-sm text-slate-500" id="loadingText">Compressing images...</p>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyA30v8yswbyqF-oB29C7DXPWpKwCQscs5o", authDomain: "land-425be.firebaseapp.com", projectId: "land-425be", storageBucket: "land-425be.firebasestorage.app", messagingSenderId: "1053755182230", appId: "1:1053755182230:web:9596bee1de56a3c63e86b7", measurementId: "G-DQVYCKN9KY" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Map Setup
-        const map = L.map('map').setView([6.9271, 79.8612], 10);
+        // --- MAP SETUP & GPS ---
+        const map = L.map('map').setView([6.9271, 79.8612], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         let marker;
-        map.on('click', (e) => {
+
+        const updateMarker = (lat, lng) => {
             if(marker) map.removeLayer(marker);
-            marker = L.marker(e.latlng).addTo(map);
-            document.getElementById('landLat').value = e.latlng.lat;
-            document.getElementById('landLng').value = e.latlng.lng;
+            marker = L.marker([lat, lng]).addTo(map);
+            map.setView([lat, lng], 16);
+            document.getElementById('landLat').value = lat;
+            document.getElementById('landLng').value = lng;
+        };
+
+        map.on('click', (e) => updateMarker(e.latlng.lat, e.latlng.lng));
+
+        window.locateMe = () => {
+            if(!navigator.geolocation) return alert("GPS not supported");
+            navigator.geolocation.getCurrentPosition(
+                (pos) => updateMarker(pos.coords.latitude, pos.coords.longitude),
+                () => alert("Unable to get location. Please enable GPS.")
+            );
+        };
+
+        // --- OPTIMIZED IMAGE HANDLING ---
+        // Generates preview thumbnails instantly
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const previewDiv = document.getElementById('imagePreview');
+            previewDiv.innerHTML = '';
+            Array.from(this.files).forEach(file => {
+                const url = URL.createObjectURL(file);
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'w-16 h-16 rounded-lg object-cover border border-slate-200 shadow-sm';
+                previewDiv.appendChild(img);
+            });
         });
 
-        // 1. Image Compression (Optimized)
+        // Faster Compression Logic
         const compressImage = (file) => new Promise((resolve) => {
             const reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = (e) => {
@@ -89,112 +208,137 @@
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    // Slightly reduced max-width for speed (800 -> 700 is barely noticeable but faster)
-                    const scale = 700 / img.width; 
-                    canvas.width = 700; canvas.height = img.height * scale;
+                    // Reduced max-width to 600px for faster mobile loading & uploading
+                    const scale = 600 / img.width; 
+                    canvas.width = 600; canvas.height = img.height * scale;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    // Quality 0.5 is good balance for speed/quality
-                    resolve(canvas.toDataURL('image/jpeg', 0.5)); 
+                    // Quality 0.6 is the sweet spot for Real Estate (clear but small file size)
+                    resolve(canvas.toDataURL('image/jpeg', 0.6)); 
                 };
             };
         });
 
-        // 2. Fetch & Clean Old Data
-        async function fetchAndCleanLands() {
+        // --- DATA MANAGEMENT ---
+        window.fetchAndCleanLands = async () => {
             const listDiv = document.getElementById('manageList');
-            listDiv.innerHTML = '';
+            // Don't clear immediately, just show loading if empty
+            if(!listDiv.innerHTML.trim()) listDiv.innerHTML = '<div class="loader mx-auto"></div>';
             
-            const snap = await getDocs(collection(db, "lands"));
-            const now = new Date();
-            let deletedCount = 0;
+            try {
+                // Order by timestamp to show newest first
+                const q = query(collection(db, "lands"), orderBy("timestamp", "desc"));
+                const snap = await getDocs(q);
+                
+                listDiv.innerHTML = '';
+                const now = new Date();
 
-            snap.forEach(async (d) => {
-                const data = d.data();
-                const id = d.id;
-
-                // --- AUTO DELETE LOGIC (3 Days) ---
-                if (data.status === 'sold' && data.soldAt) {
-                    const soldDate = new Date(data.soldAt.seconds ? data.soldAt.seconds * 1000 : data.soldAt);
-                    const diffTime = Math.abs(now - soldDate);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-
-                    if (diffDays > 3) {
-                        await deleteDoc(doc(db, "lands", id));
-                        deletedCount++;
-                        return;
-                    }
+                if(snap.empty) {
+                    listDiv.innerHTML = '<p class="text-center text-slate-400 py-4">No properties found.</p>';
+                    return;
                 }
 
-                // --- RENDER LIST ---
-                const isSold = data.status === 'sold';
-                const el = document.createElement('div');
-                el.className = `flex justify-between items-center p-4 rounded-xl border ${isSold ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'}`;
-                el.innerHTML = `
-                    <div class="flex gap-3 items-center">
-                        <img src="${data.imageUrls ? data.imageUrls[0] : data.imageUrl}" class="w-12 h-12 rounded-lg object-cover">
-                        <div>
-                            <p class="font-bold text-slate-800">${data.title}</p>
-                            <p class="text-xs ${isSold ? 'text-red-500 font-bold' : 'text-green-600 font-bold'}">${isSold ? 'SOLD OUT' : 'AVAILABLE'}</p>
+                snap.forEach(async (d) => {
+                    const data = d.data();
+                    const id = d.id;
+
+                    // Auto Delete Logic (3 Days)
+                    if (data.status === 'sold' && data.soldAt) {
+                        const soldDate = new Date(data.soldAt.seconds ? data.soldAt.seconds * 1000 : data.soldAt);
+                        const diffDays = Math.ceil(Math.abs(now - soldDate) / (1000 * 60 * 60 * 24)); 
+                        if (diffDays > 3) {
+                            await deleteDoc(doc(db, "lands", id));
+                            return; // Don't render deleted item
+                        }
+                    }
+
+                    const isSold = data.status === 'sold';
+                    const mainImg = data.imageUrls ? data.imageUrls[0] : (data.imageUrl || '');
+
+                    const el = document.createElement('div');
+                    el.className = `flex justify-between items-center p-3 rounded-xl border shadow-sm transition-all hover:shadow-md ${isSold ? 'bg-red-50 border-red-100 opacity-75' : 'bg-white border-slate-100'}`;
+                    el.innerHTML = `
+                        <div class="flex gap-3 items-center overflow-hidden">
+                            <div class="w-12 h-12 flex-shrink-0 bg-slate-200 rounded-lg overflow-hidden">
+                                <img src="${mainImg}" class="w-full h-full object-cover">
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-bold text-slate-800 text-sm truncate">${data.title}</p>
+                                <p class="text-xs text-slate-500 truncate">${data.perches} P @ ${data.location}</p>
+                            </div>
                         </div>
-                    </div>
-                    ${!isSold ? `<button onclick="markSold('${id}')" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-200">Mark Sold</button>` : `<span class="text-xs text-gray-400">Deleting soon</span>`}
-                `;
-                listDiv.appendChild(el);
-            });
-
-            if(deletedCount > 0) document.getElementById('statusMsg').innerText = `🧹 Cleaned up ${deletedCount} old sold listings.`;
-        }
-
-        // 3. Mark as Sold Function
-        window.markSold = async (id) => {
-            if(confirm("Mark this property as SOLD? It will be deleted automatically after 3 days.")) {
-                await updateDoc(doc(db, "lands", id), {
-                    status: 'sold',
-                    soldAt: new Date().toISOString()
+                        <div class="flex-shrink-0 ml-2">
+                             ${!isSold ? 
+                                `<button onclick="markSold('${id}')" class="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 active:scale-95 transition">Mark Sold</button>` 
+                                : `<span class="text-xs font-bold text-red-400 bg-red-100 px-2 py-1 rounded">SOLD</span>`}
+                        </div>
+                    `;
+                    listDiv.appendChild(el);
                 });
+            } catch (e) {
+                console.error(e);
+                listDiv.innerHTML = '<p class="text-center text-red-400">Error loading data.</p>';
+            }
+        };
+
+        window.markSold = async (id) => {
+            if(confirm("Confirm: Mark as SOLD?")) {
+                const btn = event.target;
+                btn.innerText = "...";
+                await updateDoc(doc(db, "lands", id), { status: 'sold', soldAt: new Date().toISOString() });
                 fetchAndCleanLands();
             }
         };
 
-        // 4. Add New Land (Optimized for Speed)
+        // --- SUBMIT FORM ---
         document.getElementById('addLandForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('saveBtn');
+            
             const lat = document.getElementById('landLat').value;
             const files = document.getElementById('imageInput').files;
+            
+            if(!lat) return alert("⚠️ Please pin the location on the map.");
+            if(files.length === 0) return alert("⚠️ Please select at least one photo.");
 
-            if(!lat || files.length === 0) return alert("Location & Photos required!");
-            btn.innerText = "Compressing & Publishing..."; btn.disabled = true;
+            // Show Loading
+            const loader = document.getElementById('loadingOverlay');
+            const loadText = document.getElementById('loadingText');
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
 
             try {
-                // CHANGE 2: Parallel Image Processing (Much Faster)
+                loadText.innerText = `Compressing ${files.length} images...`;
+                
+                // Process images in parallel
                 const imagePromises = Array.from(files).map(file => compressImage(file));
                 const imageUrls = await Promise.all(imagePromises);
+
+                loadText.innerText = "Uploading to Database...";
 
                 await addDoc(collection(db, "lands"), {
                     title: document.getElementById('landTitle').value,
                     location: document.getElementById('landLocation').value,
                     description: document.getElementById('landDesc').value,
-                    perches: document.getElementById('landPerches').value, // Now accepts decimals
+                    perches: parseFloat(document.getElementById('landPerches').value), // Correct Decimal Storage
                     pricePerPerch: document.getElementById('landPrice').value,
                     status: 'available',
-                    lat: parseFloat(lat), lng: parseFloat(document.getElementById('landLng').value),
+                    lat: parseFloat(lat), 
+                    lng: parseFloat(document.getElementById('landLng').value),
                     imageUrls: imageUrls, 
                     timestamp: new Date()
                 });
-                alert("Published! ✅"); 
+
+                loader.classList.add('hidden');
+                alert("Success! Property Published. 🏠"); 
                 location.reload();
+
             } catch (err) { 
-                alert(err.message); 
-                btn.innerText = "Publish Property";
-                btn.disabled = false; 
+                loader.classList.add('hidden');
+                console.error(err);
+                alert("Error: " + err.message); 
             }
         });
 
-        document.getElementById('imageInput').addEventListener('change', function() {
-            document.getElementById('fileCount').innerText = `${this.files.length} Photos Selected`;
-        });
-
+        // Initial Load
         fetchAndCleanLands();
     </script>
 </body>
