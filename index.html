@@ -13,7 +13,7 @@
     <style>
         body { font-family: 'Outfit', 'Noto Sans Sinhala', sans-serif; background: #f8fafc; overflow: hidden; -webkit-tap-highlight-color: transparent; }
         
-        /* 1. NEW SPLASH SCREEN (Road Trip) */
+        /* SPLASH SCREEN */
         #splash-screen {
             position: fixed; inset: 0; z-index: 9999;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -23,21 +23,28 @@
         .brand-text { font-size: 2.5rem; font-weight: 900; color: white; letter-spacing: -1px; animation: fadeInUp 1s ease forwards; opacity: 0; transform: translateY(20px); }
         .sub-text { font-size: 0.8rem; color: #94a3b8; letter-spacing: 2px; margin-top: 5px; animation: fadeInUp 1s ease 0.3s forwards; opacity: 0; transform: translateY(20px); }
         
-        /* Road Animation Styles */
+        /* ROAD ANIMATION */
         .road-scene { margin-top: 30px; width: 220px; height: 100px; position: relative; }
         .road-path { fill: none; stroke: #3b82f6; stroke-width: 4; stroke-dasharray: 10, 10; stroke-linecap: round; opacity: 0.5; }
         .dest-pin { font-size: 24px; animation: bounce 1s infinite; transform-origin: bottom center; }
+        .car-icon { 
+            font-size: 24px; 
+            transform-box: fill-box; 
+            transform-origin: center; 
+            transform: scaleX(-1); /* Flips car to face right */
+        }
+
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* 2. VIEWS */
+        /* VIEWS */
         .view-section { height: calc(100vh - 75px); width: 100%; display: none; overflow-y: auto; scroll-behavior: smooth; }
         .view-section.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         #map { width: 100%; height: 100%; z-index: 1; }
 
-        /* 3. DETAIL PAGE */
+        /* DETAIL PAGE */
         #detail-view {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: white; z-index: 100; transform: translateX(100%);
@@ -46,7 +53,7 @@
         }
         #detail-view.open { transform: translateX(0); }
 
-        /* 4. BOTTOM NAV */
+        /* BOTTOM NAV */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
@@ -59,7 +66,7 @@
         .nav-item svg { width: 24px; height: 24px; transition: transform 0.2s; }
         .nav-item.active svg { transform: translateY(-2px); }
 
-        /* 5. NEARBY MARKERS */
+        /* MARKERS */
         .dist-marker {
             background: rgba(255, 255, 255, 0.98); 
             border: 1px solid #e2e8f0; border-left: 3px solid #3b82f6; border-radius: 8px;
@@ -72,7 +79,7 @@
         .dist-val { font-size: 10px; font-weight: 600; color: #64748b; margin-top: 1px; display: flex; align-items: center; gap: 3px; }
         @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* 6. FILTER MODAL */
+        /* FILTER MODAL */
         #filterModal {
             position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px);
             display: none; align-items: flex-end; justify-content: center;
@@ -84,7 +91,6 @@
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        /* Sat Toggle */
         .sat-btn {
             position: absolute; top: 10px; right: 10px; z-index: 400;
             background: white; padding: 8px; border-radius: 12px;
@@ -92,10 +98,7 @@
             display: flex; flex-col; align-items: center; gap: 2px;
         }
 
-        /* SECRET SCREEN */
         #secret-screen { background-color: black; transition: opacity 0.5s ease; }
-        
-        /* Loading Spinner at Bottom */
         #loadMoreSpinner { display: none; justify-content: center; padding: 20px; }
     </style>
 </head>
@@ -104,22 +107,18 @@
     <div id="splash-screen">
         <h1 class="brand-text">CNV <span class="text-green-500">HOLDINGS</span></h1>
         <p class="sub-text">POWERED BY CNV GROUP</p>
-        
         <div class="road-scene">
             <svg width="220" height="100" viewBox="0 0 220 100">
                 <path id="roadPath" d="M10,80 Q60,10 110,50 T200,50" class="road-path" />
-                
                 <text x="190" y="45" class="dest-pin">📍</text>
-                
                 <g>
-                    <text x="-15" y="5" font-size="24">🚗</text>
+                    <text x="-15" y="5" class="car-icon">🚗</text>
                     <animateMotion dur="2.5s" repeatCount="indefinite" rotate="auto">
                         <mpath href="#roadPath"/>
                     </animateMotion>
                 </g>
             </svg>
         </div>
-        
         <p class="text-slate-500 text-xs mt-2 animate-pulse">Navigating to properties...</p>
     </div>
 
@@ -129,9 +128,7 @@
                 THE KINA
             </h1>
             <p class="text-gray-400 text-sm tracking-[0.5em] uppercase animate-pulse">System Developer</p>
-            <div class="mt-10 border border-gray-800 rounded-full px-4 py-2 text-xs text-gray-600 inline-block">
-                Tap anywhere to exit
-            </div>
+            <div class="mt-10 border border-gray-800 rounded-full px-4 py-2 text-xs text-gray-600 inline-block">Tap anywhere to exit</div>
         </div>
     </div>
 
@@ -146,7 +143,7 @@
             
             <div class="flex gap-2">
                 <div class="relative flex-1 shadow-sm">
-                    <input type="text" id="searchInput" placeholder="Search city..." 
+                    <input type="text" id="searchInput" placeholder="Search city (e.g. Kandy / නුවර)..." 
                            class="w-full bg-slate-100/50 border-none rounded-xl py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-green-500/20 text-sm font-semibold text-slate-700">
                     <span class="absolute left-3.5 top-3 text-slate-400">🔍</span>
                 </div>
@@ -161,12 +158,8 @@
             </div>
         </div>
 
-        <div id="landList" class="p-5 space-y-4 min-h-[60vh]">
-            </div>
-        
-        <div id="loadMoreSpinner">
-            <div class="w-6 h-6 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin"></div>
-        </div>
+        <div id="landList" class="p-5 space-y-4 min-h-[60vh]"></div>
+        <div id="loadMoreSpinner"><div class="w-6 h-6 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin"></div></div>
 
         <footer class="text-center py-8 text-slate-400 pb-24">
             <h3 class="font-black text-slate-200 text-3xl tracking-tighter mb-2">CNV</h3>
@@ -178,7 +171,6 @@
     <div id="view-fav" class="view-section bg-gray-50">
         <div class="sticky top-0 bg-white/90 backdrop-blur-xl z-20 px-6 pt-12 pb-4 border-b border-slate-100">
             <h1 class="text-2xl font-bold text-slate-900">Saved Lands ❤️</h1>
-            <p class="text-xs text-slate-400">Your shortlisted properties</p>
         </div>
         <div id="favList" class="p-5 space-y-4 pb-32 min-h-[50vh] flex flex-col items-center justify-center">
             <p class="text-slate-400 text-sm">No saved items yet.</p>
@@ -229,24 +221,49 @@
 
             <div class="p-6">
                 <div class="flex justify-between items-end mb-6">
-                    <div><p class="text-xs font-bold text-slate-400 uppercase">Price Per Perch</p><p id="detailPrice" class="text-3xl font-bold text-green-600"></p></div>
+                    <div><p class="text-xs font-bold text-slate-400 uppercase">Price</p><p id="detailPrice" class="text-3xl font-bold text-green-600"></p></div>
                     <div class="text-right"><p class="text-xs font-bold text-slate-400 uppercase">Size</p><p id="detailPerches" class="text-xl font-bold text-slate-800"></p></div>
                 </div>
                 
                 <p id="detailLocation" class="text-slate-600 font-medium mb-6 flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="text-lg">📍</span> <span class="text-sm">Location</span></p>
                 
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <button onclick="viewOnMap()" class="bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 hover:bg-slate-200">
-                        <span class="text-lg">🗺️</span> View on App
+                <div class="grid grid-cols-3 gap-2 mb-8">
+                    <button onclick="viewOnMap()" class="bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-[10px] flex flex-col items-center justify-center gap-1 hover:bg-slate-200">
+                        <span class="text-lg">🗺️</span> App Map
                     </button>
-                    <button onclick="openGoogleMaps()" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold text-xs flex flex-col items-center justify-center gap-1 hover:bg-blue-100">
-                        <span class="text-lg">🚗</span> Get Directions
+                    <button onclick="openGoogleMaps()" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold text-[10px] flex flex-col items-center justify-center gap-1 hover:bg-blue-100">
+                        <span class="text-lg">🚗</span> Directions
+                    </button>
+                    <button onclick="openStreetView()" class="bg-yellow-50 text-yellow-600 py-3 rounded-xl font-bold text-[10px] flex flex-col items-center justify-center gap-1 hover:bg-yellow-100">
+                        <span class="text-lg">🌏</span> Street View
                     </button>
                 </div>
 
-                <div class="mb-8"><h3 class="font-bold text-slate-900 mb-3 text-lg">Description</h3><p id="detailDesc" class="text-slate-600 text-sm leading-7 whitespace-pre-line"></p></div>
+                <div class="mb-8">
+                    <h3 class="font-bold text-slate-900 mb-3 text-lg">Description</h3>
+                    <p id="detailDesc" class="text-slate-600 text-sm leading-7 whitespace-pre-line"></p>
+                </div>
                 
-                <div><h3 class="font-bold text-slate-900 mb-3 text-lg">Nearby Highlights</h3><div id="nearbyList" class="space-y-2 text-sm text-slate-500 bg-slate-50 p-4 rounded-2xl border border-slate-100">Tap 'View on App' to see nearby places.</div></div>
+                <div class="mb-8">
+                    <h3 class="font-bold text-slate-900 mb-3 text-lg">Nearby Highlights</h3>
+                    <div id="nearbyList" class="space-y-2 text-sm text-slate-500 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        </div>
+                </div>
+
+                <div class="bg-green-50 p-5 rounded-2xl border border-green-100 mb-8">
+                    <h3 class="font-bold text-green-800 mb-2">🤝 Make an Offer</h3>
+                    <p class="text-xs text-green-600 mb-3">Interested? Propose your price below.</p>
+                    <div class="flex gap-2">
+                        <input type="number" id="offerInput" placeholder="Rs. Your Offer" class="flex-1 px-3 py-2 rounded-lg border-none text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-green-400">
+                        <button onclick="sendOffer()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md">Send</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-900 mb-3 text-lg">You Might Also Like</h3>
+                    <div id="similarList" class="space-y-3">
+                        </div>
+                </div>
             </div>
         </div>
 
@@ -262,10 +279,9 @@
                 <h2 class="text-xl font-bold text-slate-900">Filter Properties</h2>
                 <button onclick="closeFilter()" class="text-slate-500 text-2xl">✕</button>
             </div>
-            
             <div class="space-y-6">
                 <div>
-                    <label class="text-sm font-bold text-slate-600 mb-2 block">Max Price (Per Perch)</label>
+                    <label class="text-sm font-bold text-slate-600 mb-2 block">Max Price</label>
                     <input type="range" id="priceRange" min="0" max="5000000" step="50000" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-green-600">
                     <p class="text-right text-green-600 font-bold mt-1" id="priceVal">Any</p>
                 </div>
@@ -296,30 +312,42 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyA30v8yswbyqF-oB29C7DXPWpKwCQscs5o", authDomain: "land-425be.firebaseapp.com", projectId: "land-425be", storageBucket: "land-425be.firebasestorage.app", messagingSenderId: "1053755182230", appId: "1:1053755182230:web:9596bee1de56a3c63e86b7", measurementId: "G-DQVYCKN9KY" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Map Setup
-        const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png');
-        const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Esri' });
-
-        const map = L.map('map', { zoomControl: false, tap: false, layers: [streetLayer] }).setView([6.9271, 79.8612], 9);
-        let currentLayer = 'street';
-        
-        window.toggleSat = () => {
-            if(currentLayer === 'street') { map.removeLayer(streetLayer); map.addLayer(satLayer); currentLayer='sat'; }
-            else { map.removeLayer(satLayer); map.addLayer(streetLayer); currentLayer='street'; }
+        // Sinhala to English Mapping
+        const cityMapping = {
+            "කොළඹ": "colombo", "නුගේගොඩ": "nugegoda", "මහරගම": "maharagama", "පිලියන්දල": "piliyandala",
+            "කැස්බෑව": "kesbewa", "බණ්ඩාරගම": "bandaragama", "හොරණ": "horana", "පානදුර": "panadura",
+            "වාද්දුව": "wadduwa", "කළුතර": "kalutara", "මතුගම": "mathugama", "අලුත්ගම": "aluthgama",
+            "බෙන්තොට": "bentota", "අම්බලන්ගොඩ": "ambalangoda", "හික්කඩුව": "hikkaduwa", "ගාල්ල": "galle",
+            "මාතර": "matara", "වැලිගම": "weligama", "හම්බන්තොට": "hambantota", "තංගල්ල": "tangalle",
+            "ඇඹිලිපිටිය": "embilipitiya", "රත්නපුර": "rathnapura", "අවිස්සාවේල්ල": "avissawella",
+            "හෝමාගම": "homagama", "කොට්ටාව": "kottawa", "මාලබේ": "malabe", "බත්තරමුල්ල": "battaramulla",
+            "රාජගිරිය": "rajagiriya", "කඩවත": "kadawatha", "කැලණිය": "kelaniya", "වත්තල": "wattala",
+            "ජාඇල": "ja-ela", "මීගමුව": "negombo", "ගම්පහ": "gampaha", "වේයන්ගොඩ": "veyangoda",
+            "නිට්ටඹුව": "nittambuwa", "වරකාපොල": "warakapola", "කෑගල්ල": "kegalle", "මාවනැල්ල": "mawanella",
+            "නුවර": "kandy", "මහනුවර": "kandy", "පේරාදෙණිය": "peradeniya", "ගම්පොල": "gampola",
+            "නාවලපිටිය": "nawalapitiya", "හැටන්": "hatton", "නුවරඑළිය": "nuwaraeliya", "බණ්ඩාරවෙල": "bandarawela",
+            "බදුල්ල": "badulla", "මොණරාගල": "monaragala", "කුරුණෑගල": "kurunegala", "වාරියපොල": "wariyapola",
+            "කුලියාපිටිය": "kuliyapitiya", "පුත්තලම": "puttalam", "හලාවත": "chilaw", "අනුරාධපුරය": "anuradhapura",
+            "පොළොන්නරුව": "polonnaruwa", "දඹුල්ල": "dambulla", "සීගිරිය": "sigiriya", "ත්‍රිකුණාමලය": "trincomalee",
+            "මඩකලපුව": "batticaloa", "යාපනය": "jaffna"
         };
 
-        let landsData = [];
-        let displayedData = []; // To hold filtered list
-        let renderCount = 0;
-        const BATCH_SIZE = 5; // Load 5 at a time
-        let markers = {};
+        const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png');
+        const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Esri' });
+        const map = L.map('map', { zoomControl: false, tap: false, layers: [streetLayer] }).setView([6.9271, 79.8612], 9);
+        let currentLayer = 'street';
+        window.toggleSat = () => { if(currentLayer === 'street') { map.removeLayer(streetLayer); map.addLayer(satLayer); currentLayer='sat'; } else { map.removeLayer(satLayer); map.addLayer(streetLayer); currentLayer='street'; } };
+
+        let landsData = []; let displayedData = []; let renderCount = 0; const BATCH_SIZE = 5; 
         let nearbyLayer = L.layerGroup().addTo(map);
+        let landLayer = L.layerGroup().addTo(map); 
+        let selectedLandId = null;
         let favorites = JSON.parse(localStorage.getItem('cnv_favs')) || [];
 
         window.switchTab = (tab) => {
@@ -331,21 +359,20 @@
             if(tab === 'fav') renderFavorites();
         };
 
-        // --- LOAD DATA ---
+        // --- LOAD DATA & SYNC MARKERS ---
         async function loadLands() {
             try {
-                const q = query(collection(db, "lands"), orderBy("timestamp", "desc"));
+                // Keep the fix: No orderBy in query to avoid index errors
+                const q = query(collection(db, "lands")); 
                 const snap = await getDocs(q);
-                const listDiv = document.getElementById('landList');
-                const now = new Date();
-                landsData = [];
+                
+                landsData = []; const now = new Date();
                 
                 snap.forEach(doc => {
                     const data = doc.data(); data.id = doc.id;
-                    let landDate;
-                    if (data.timestamp && data.timestamp.seconds) landDate = new Date(data.timestamp.seconds * 1000); 
-                    else if (data.timestamp) landDate = new Date(data.timestamp); 
-                    else landDate = new Date();
+                    let landDate = data.timestamp && data.timestamp.seconds ? new Date(data.timestamp.seconds * 1000) : (data.timestamp ? new Date(data.timestamp) : new Date(0));
+                    data.sortDate = landDate; 
+
                     const diffDays = Math.ceil(Math.abs(now - landDate) / (1000 * 60 * 60 * 24));
                     data.isNew = diffDays <= 7;
                     if (data.status === 'sold' && data.soldAt) {
@@ -356,11 +383,13 @@
                     landsData.push(data);
                 });
 
-                // Init Display
+                // Manual Sort (Newest First)
+                landsData.sort((a, b) => b.sortDate - a.sortDate);
+
                 displayedData = [...landsData];
                 resetRender();
-                
-                landsData.forEach(d => addMarker(d));
+                updateMapMarkers(landsData);
+
                 const params = new URLSearchParams(window.location.search);
                 if(params.get('id')) { const l = landsData.find(x=>x.id===params.get('id')); if(l) openDetail(l); }
 
@@ -369,140 +398,242 @@
                     splash.style.opacity = '0';
                     setTimeout(() => splash.style.display = 'none', 800);
                 }, 2000);
-            } catch (e) { console.error(e); setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 3000); }
-        }
-
-        // --- LAZY LOADING LOGIC ---
-        function resetRender() {
-            renderCount = 0;
-            document.getElementById('landList').innerHTML = '';
-            renderNextBatch();
-        }
-
-        function renderNextBatch() {
-            const listDiv = document.getElementById('landList');
-            const spinner = document.getElementById('loadMoreSpinner');
-            
-            // Check if more items exist
-            if(renderCount >= displayedData.length) {
-                spinner.style.display = 'none';
-                if(displayedData.length === 0) listDiv.innerHTML = '<p class="text-center text-slate-400 py-10">No properties found.</p>';
-                return;
+            } catch (e) { 
+                console.error("Error fetching lands:", e); 
+                setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 3000); 
             }
+        }
 
-            // Render batch
+        // --- MARKER LOGIC ---
+        function updateMapMarkers(dataArray) {
+            landLayer.clearLayers();
+            dataArray.forEach(data => {
+                if(!data.lat || !data.lng) return;
+                const isSelected = data.id === selectedLandId;
+                let color = data.status === 'sold' ? '#ef4444' : '#16a34a';
+                if(isSelected) color = '#3b82f6'; 
+
+                const size = isSelected ? 30 : 24;
+                const border = isSelected ? '4px solid white' : '3px solid white';
+                const zIndex = isSelected ? 1000 : 1;
+
+                const icon = L.divIcon({ 
+                    className: '', 
+                    html: `<div style="background:${color}; width:${size}px; height:${size}px; border-radius:50%; border:${border}; box-shadow:0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease;"></div>`,
+                    iconSize: [size, size],
+                    iconAnchor: [size/2, size/2]
+                });
+
+                const marker = L.marker([data.lat, data.lng], {icon: icon, zIndexOffset: zIndex});
+                marker.on('click', () => { 
+                    selectedLandId = data.id; 
+                    updateMapMarkers(displayedData); 
+                    showFloatingCard(data); 
+                    map.flyTo([data.lat, data.lng], 14); 
+                });
+                marker.addTo(landLayer);
+            });
+        }
+
+        function resetRender() { renderCount = 0; document.getElementById('landList').innerHTML = ''; renderNextBatch(); }
+        function renderNextBatch() {
+            const listDiv = document.getElementById('landList'); const spinner = document.getElementById('loadMoreSpinner');
+            if(renderCount >= displayedData.length) { spinner.style.display = 'none'; if(displayedData.length === 0) listDiv.innerHTML = '<p class="text-center text-slate-400 py-10">No properties found.</p>'; return; }
             const nextBatch = displayedData.slice(renderCount, renderCount + BATCH_SIZE);
             nextBatch.forEach(data => renderCard(data, listDiv));
             renderCount += BATCH_SIZE;
-
-            // Show/Hide Spinner based on remaining
-            if(renderCount < displayedData.length) {
-                spinner.style.display = 'flex';
-            } else {
-                spinner.style.display = 'none';
-            }
+            spinner.style.display = renderCount < displayedData.length ? 'flex' : 'none';
         }
+        document.getElementById('view-list').addEventListener('scroll', function() { if(this.scrollTop + this.clientHeight >= this.scrollHeight - 100 && document.getElementById('loadMoreSpinner').style.display === 'flex') renderNextBatch(); });
 
-        // SCROLL LISTENER FOR INFINITE SCROLL
-        document.getElementById('view-list').addEventListener('scroll', function() {
-            const container = this;
-            if(container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
-                // Determine if we need to load more (throttle slightly)
-                if(document.getElementById('loadMoreSpinner').style.display === 'flex') {
-                    renderNextBatch();
-                }
-            }
-        });
+        function formatSize(d) {
+            const size = d.size || d.perches;
+            const unit = d.sizeUnit === 'acre' ? 'Acres' : 'P';
+            return `${size} ${unit}`;
+        }
+        function formatPrice(d) {
+            const price = d.price || d.pricePerPerch;
+            const type = d.priceType === 'total' ? 'Total' : (d.sizeUnit === 'acre' ? '/ Acre' : '/ P');
+            return `Rs. ${price} <span class="text-slate-400 text-xs font-normal">${type}</span>`;
+        }
 
         function renderCard(data, container) {
-            const isSold = data.status === 'sold';
-            const isFav = favorites.includes(data.id);
+            const isSold = data.status === 'sold'; const isFav = favorites.includes(data.id);
             const div = document.createElement('div');
             div.className = "bg-white p-3 rounded-2xl shadow-sm border border-slate-100 active:scale-[0.98] transition cursor-pointer flex gap-4 group relative";
-            div.innerHTML = `
-                <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 relative bg-slate-100">
-                    <img src="${data.imageUrls[0]}" class="w-full h-full object-cover">
-                    ${isSold ? '<div class="absolute inset-0 bg-red-500/50 flex items-center justify-center"><span class="bg-red-600 border border-white text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">SOLD</span></div>' : ''}
-                    ${!isSold && data.isNew ? '<div class="absolute top-0 left-0 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br-lg shadow">NEW</div>' : ''}
-                </div>
-                <div class="flex-1 flex flex-col justify-center min-w-0" onclick="openDetail(this.parentElement.data)">
-                    <h3 class="font-bold text-slate-800 text-lg leading-tight mb-1 truncate">${data.title}</h3>
-                    <p class="text-xs text-slate-500 mb-1 truncate">📍 ${data.location}</p>
-                    <p class="text-green-600 font-bold text-base">Rs. ${data.pricePerPerch} <span class="text-slate-400 text-xs font-normal">/ P</span></p>
-                </div>
-                <button onclick="toggleFav('${data.id}', this)" class="absolute top-2 right-2 p-2 rounded-full ${isFav ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}">
-                    <i class="fas fa-heart"></i>
-                </button>
-            `;
-            div.data = data; 
-            container.appendChild(div);
+            div.innerHTML = `<div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 relative bg-slate-100"><img src="${data.imageUrls?.[0] || ''}" class="w-full h-full object-cover">${isSold ? '<div class="absolute inset-0 bg-red-500/50 flex items-center justify-center"><span class="bg-red-600 border border-white text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">SOLD</span></div>' : ''}${!isSold && data.isNew ? '<div class="absolute top-0 left-0 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br-lg shadow">NEW</div>' : ''}</div><div class="flex-1 flex flex-col justify-center min-w-0" onclick="openDetail(this.parentElement.data)"><h3 class="font-bold text-slate-800 text-lg leading-tight mb-1 truncate">${data.title}</h3><p class="text-xs text-slate-500 mb-1 truncate">📍 ${data.location}</p><p class="text-green-600 font-bold text-base">${formatPrice(data)}</p></div><button onclick="toggleFav('${data.id}', this)" class="absolute top-2 right-2 p-2 rounded-full ${isFav ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}"><i class="fas fa-heart"></i></button>`;
+            div.data = data; container.appendChild(div);
         }
 
-        // --- SEARCH LOGIC (WITH EASTER EGG) ---
         document.getElementById('searchInput').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            
-            // 1. EASTER EGG CHECK (Strict Match)
-            if(term === 'the kina' || term === 'thekina') {
-                document.getElementById('secret-screen').classList.remove('hidden');
-                setTimeout(() => document.getElementById('secret-screen').classList.remove('opacity-0'), 50);
-                return; // Stop search
+            const term = e.target.value.toLowerCase().trim();
+            if(term === 'the kina' || term === 'thekina') { document.getElementById('secret-screen').classList.remove('hidden'); setTimeout(() => document.getElementById('secret-screen').classList.remove('opacity-0'), 50); return; }
+            if(term === "") { displayedData = [...landsData]; } 
+            else { 
+                const mappedTerm = cityMapping[term] || term;
+                displayedData = landsData.filter(l => l.location.toLowerCase().includes(term) || l.location.toLowerCase().includes(mappedTerm) || l.title.toLowerCase().includes(term));
             }
-
-            // 2. Normal Search
-            if(term.trim() === "") {
-                displayedData = [...landsData];
-            } else {
-                displayedData = landsData.filter(l => l.location.toLowerCase().includes(term) || l.title.toLowerCase().includes(term));
-            }
-            
-            resetRender(); // Reset lazy load with new data
+            resetRender();
+            updateMapMarkers(displayedData);
         });
 
-        // Close secret
-        window.closeSecret = () => {
-            const secret = document.getElementById('secret-screen');
-            secret.classList.add('opacity-0');
-            setTimeout(() => {
-                secret.classList.add('hidden');
-                document.getElementById('searchInput').value = "";
-                displayedData = [...landsData];
-                resetRender();
-            }, 500);
-        };
-
-        // --- SORTING ---
-        window.sortLands = () => {
-            const opt = document.getElementById('sortOption').value;
-            // Sort the MASTER list, then re-assign to displayed
-            let sorted = [...landsData];
-            if(opt === 'price_asc') sorted.sort((a, b) => parseInt(a.pricePerPerch.replace(/,/g, '')) - parseInt(b.pricePerPerch.replace(/,/g, '')));
-            else if(opt === 'price_desc') sorted.sort((a, b) => parseInt(b.pricePerPerch.replace(/,/g, '')) - parseInt(a.pricePerPerch.replace(/,/g, '')));
-            else sorted.sort((a,b) => b.timestamp - a.timestamp); 
-            
-            landsData = sorted;
-            displayedData = [...sorted]; // Reset current view to sorted
-            resetRender();
-        };
-
-        // ... (Remaining Functions: openGoogleMaps, toggleFav, renderFavorites, openFilter, applyFilter, addMarker, showFloatingCard, openDetail, viewOnMap, calcDistanceOnMap, shareLink, slide) ...
+        window.closeSecret = () => { const secret = document.getElementById('secret-screen'); secret.classList.add('opacity-0'); setTimeout(() => { secret.classList.add('hidden'); document.getElementById('searchInput').value = ""; displayedData = [...landsData]; resetRender(); updateMapMarkers(landsData); }, 500); };
+        window.sortLands = () => { const opt = document.getElementById('sortOption').value; let sorted = [...landsData]; if(opt === 'price_asc') sorted.sort((a, b) => (a.sortPrice || 0) - (b.sortPrice || 0)); else if(opt === 'price_desc') sorted.sort((a, b) => (b.sortPrice || 0) - (a.sortPrice || 0)); else sorted.sort((a,b) => b.sortDate - a.sortDate); landsData = sorted; displayedData = [...sorted]; resetRender(); };
+        window.openGoogleMaps = () => { if(!currentLand) return; window.open(`http://maps.google.com/maps?q=${currentLand.lat},${currentLand.lng}`, '_blank'); };
         
-        window.openGoogleMaps = () => { if(!currentLand) return; const url = `https://www.google.com/maps/dir/?api=1&destination=${currentLand.lat},${currentLand.lng}`; window.open(url, '_blank'); };
+        // NEW: Street View Logic
+        window.openStreetView = () => { if(!currentLand) return; window.open(`https://www.google.com/maps?q=&layer=c&cbll=${currentLand.lat},${currentLand.lng}`, '_blank'); };
         
-        // Loan Calculator removed.
+        // NEW: Make Offer Logic
+        window.sendOffer = () => {
+            const amount = document.getElementById('offerInput').value;
+            if(!amount) return alert("Please enter an amount!");
+            const shareUrl = `${window.location.origin}${window.location.pathname}?id=${currentLand.id}`;
+            const msg = `Hi, I am interested in ${currentLand.title} (${shareUrl}). My offer is Rs. ${amount}. Can we discuss?`;
+            window.open(`https://wa.me/94725486676?text=${encodeURIComponent(msg)}`, '_blank');
+        };
 
         window.toggleFav = (id, btn) => { if(favorites.includes(id)) { favorites = favorites.filter(x => x !== id); btn.classList.remove('text-red-500'); btn.classList.add('text-gray-300'); } else { favorites.push(id); btn.classList.add('text-red-500'); btn.classList.remove('text-gray-300'); } localStorage.setItem('cnv_favs', JSON.stringify(favorites)); if(document.getElementById('view-fav').classList.contains('active')) renderFavorites(); };
         function renderFavorites() { const container = document.getElementById('favList'); container.innerHTML = ""; if(favorites.length === 0) { container.innerHTML = '<p class="text-slate-400 text-center mt-10">No saved items.</p>'; return; } favorites.forEach(id => { const l = landsData.find(x=>x.id===id); if(l) renderCard(l, container); }); }
+        
         window.openFilter = () => document.getElementById('filterModal').classList.add('open');
         window.closeFilter = () => document.getElementById('filterModal').classList.remove('open');
         document.getElementById('priceRange').addEventListener('input', function() { document.getElementById('priceVal').innerText = this.value == 0 ? "Any" : "Max: Rs. " + Number(this.value).toLocaleString(); });
-        window.applyFilter = () => { const maxPrice = document.getElementById('priceRange').value; const minPerch = document.getElementById('perchMin').value; displayedData = landsData.filter(l => { let valid = true; const price = parseInt(l.pricePerPerch.replace(/,/g, '')); if(maxPrice > 0 && price > maxPrice) valid = false; if(minPerch && parseFloat(l.perches) < minPerch) valid = false; return valid; }); resetRender(); closeFilter(); };
-        function addMarker(data) { if(!data.lat) return; const color = data.status === 'sold' ? '#ef4444' : '#16a34a'; const icon = L.divIcon({ className: '', html: `<div style="background:${color}; width:24px; height:24px; border-radius:50%; border:3px solid white; box-shadow:0 4px 10px rgba(0,0,0,0.3);"></div>` }); const marker = L.marker([data.lat, data.lng], {icon: icon}).addTo(map); marker.on('click', () => { showFloatingCard(data); map.flyTo([data.lat, data.lng], 14); }); markers[data.id] = marker; }
-        let selectedLandFromMap = null; function showFloatingCard(data) { selectedLandFromMap = data; document.getElementById('mapFloatCard').classList.remove('hidden'); document.getElementById('mapCardImg').src = data.imageUrls[0]; document.getElementById('mapCardTitle').innerText = data.title; document.getElementById('mapCardLocation').innerText = data.location; document.getElementById('mapCardPrice').innerText = "Rs. " + data.pricePerPerch; } window.openDetailFromMap = () => { if(selectedLandFromMap) openDetail(selectedLandFromMap); };
-        let currentImgs = []; let idx = 0; let currentLand = null; window.openDetail = (data) => { currentLand = data; currentImgs = data.imageUrls; idx = 0; document.getElementById('mapFloatCard').classList.add('hidden'); document.getElementById('detailImg').src = currentImgs[0]; document.getElementById('detailTitle').innerText = data.title; document.getElementById('detailLocation').innerText = data.location; document.getElementById('detailPerches').innerText = data.perches + " P"; document.getElementById('detailPrice').innerText = "Rs. " + data.pricePerPerch; document.getElementById('detailDesc').innerText = data.description; const isSold = data.status === 'sold'; const badge = document.getElementById('detailBadge'); badge.innerText = isSold ? 'SOLD OUT' : 'AVAILABLE'; badge.className = `inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase text-white shadow-lg mb-2 ${isSold ? 'bg-red-600' : 'bg-green-600'}`; if(data.isNew && !isSold) document.getElementById('detailNewBadge').classList.remove('hidden'); else document.getElementById('detailNewBadge').classList.add('hidden'); const shareUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`; window.history.pushState({id: data.id}, '', shareUrl); document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Hi, I'm interested in: ${shareUrl}`; document.getElementById('detail-view').classList.add('open'); };
+        window.applyFilter = () => {
+            const maxPrice = document.getElementById('priceRange').value;
+            const minPerch = document.getElementById('perchMin').value;
+            displayedData = landsData.filter(l => {
+                let valid = true;
+                const size = l.size || l.perches || 0;
+                const totalPerches = (l.sizeUnit === 'acre') ? size * 160 : size;
+                if(maxPrice > 0 && (l.sortPrice || 0) > maxPrice) valid = false;
+                if(minPerch && totalPerches < minPerch) valid = false;
+                return valid;
+            });
+            resetRender(); updateMapMarkers(displayedData); closeFilter();
+        };
+
+        let selectedLandFromMap = null; 
+        function showFloatingCard(data) { 
+            selectedLandFromMap = data; 
+            document.getElementById('mapFloatCard').classList.remove('hidden'); 
+            document.getElementById('mapCardImg').src = data.imageUrls?.[0]; 
+            document.getElementById('mapCardTitle').innerText = data.title; 
+            document.getElementById('mapCardLocation').innerText = data.location; 
+            document.getElementById('mapCardPrice').innerHTML = formatPrice(data); 
+        } 
+        window.openDetailFromMap = () => { if(selectedLandFromMap) openDetail(selectedLandFromMap); };
+        
+        let currentImgs = []; let idx = 0; let currentLand = null; 
+        window.openDetail = (data) => { 
+            currentLand = data; currentImgs = data.imageUrls; idx = 0; 
+            
+            // --- FIX START: SET BLUE MARKER ON SELECT ---
+            selectedLandId = data.id; 
+            updateMapMarkers(displayedData); 
+            // --- FIX END ---
+
+            document.getElementById('mapFloatCard').classList.add('hidden'); 
+            document.getElementById('detailImg').src = currentImgs[0]; 
+            document.getElementById('detailTitle').innerText = data.title; 
+            document.getElementById('detailLocation').innerText = data.location; 
+            document.getElementById('detailPerches').innerText = formatSize(data); 
+            document.getElementById('detailPrice').innerHTML = formatPrice(data); 
+            document.getElementById('detailDesc').innerText = data.description; 
+            const isSold = data.status === 'sold'; 
+            const badge = document.getElementById('detailBadge'); 
+            badge.innerText = isSold ? 'SOLD OUT' : 'AVAILABLE'; 
+            badge.className = `inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase text-white shadow-lg mb-2 ${isSold ? 'bg-red-600' : 'bg-green-600'}`; 
+            if(data.isNew && !isSold) document.getElementById('detailNewBadge').classList.remove('hidden'); else document.getElementById('detailNewBadge').classList.add('hidden'); 
+            
+            // Render Similar
+            renderSimilar(data);
+
+            calcDistanceOnMap(data.lat, data.lng);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`; 
+            window.history.pushState({id: data.id}, '', shareUrl); 
+            document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Hi, I'm interested in: ${shareUrl}`; 
+            document.getElementById('detail-view').classList.add('open'); 
+        };
+
+        // NEW: Similar Lands Logic
+        function renderSimilar(current) {
+            const list = document.getElementById('similarList');
+            list.innerHTML = "";
+            
+            // Find lands in same location OR similar price (+- 5Lakhs), exclude current
+            const similar = landsData.filter(l => 
+                l.id !== current.id && 
+                l.status !== 'sold' &&
+                (l.location === current.location || Math.abs((l.sortPrice||0) - (current.sortPrice||0)) < 500000)
+            ).slice(0, 3); // Take top 3
+
+            if(similar.length === 0) {
+                list.innerHTML = "<p class='text-xs text-slate-400 italic'>No similar properties found.</p>";
+                return;
+            }
+
+            similar.forEach(d => {
+                const div = document.createElement('div');
+                div.className = "flex gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100 cursor-pointer active:scale-95 transition";
+                div.onclick = () => openDetail(d);
+                div.innerHTML = `
+                    <img src="${d.imageUrls[0]}" class="w-16 h-16 rounded-lg object-cover">
+                    <div class="flex-1 min-w-0 flex flex-col justify-center">
+                        <h4 class="font-bold text-slate-800 text-xs truncate">${d.title}</h4>
+                        <p class="text-[10px] text-slate-500 truncate">${d.location}</p>
+                        <p class="text-green-600 font-bold text-xs">${formatPrice(d)}</p>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
         window.closeDetail = () => { document.getElementById('detail-view').classList.remove('open'); window.history.pushState({}, '', window.location.pathname); document.getElementById('mapFloatCard').classList.add('hidden'); };
         window.viewOnMap = () => { if(!currentLand) return; document.getElementById('detail-view').classList.remove('open'); switchTab('map'); map.flyTo([currentLand.lat, currentLand.lng], 15); calcDistanceOnMap(currentLand.lat, currentLand.lng); };
-        async function calcDistanceOnMap(lat, lng) { nearbyLayer.clearLayers(); const list = document.getElementById('nearbyList'); list.innerHTML = "<span class='animate-pulse text-green-600 font-bold'>Scanning nearby area...</span>"; const query = `[out:json][timeout:25];(nwr["amenity"~"school|hospital|bank"](around:3000,${lat},${lng});nwr["shop"="supermarket"](around:3000,${lat},${lng}););out center;`; try { const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`); const data = await res.json(); list.innerHTML = ""; if(data.elements.length === 0) list.innerHTML = "No major spots found within 3km."; const places = data.elements.map(el => { const pLat = el.lat || (el.center && el.center.lat); const pLon = el.lon || (el.center && el.center.lon); if(!pLat || !pLon) return null; const d = map.distance([lat, lng], [pLat, pLon]); return { ...el, dist: d, lat: pLat, lon: pLon }; }).filter(el => el !== null).sort((a,b) => a.dist - b.dist).slice(0, 8); places.forEach(el => { const distTxt = el.dist > 1000 ? (el.dist/1000).toFixed(1)+"km" : Math.round(el.dist)+"m"; let icon='📍', color='#3b82f6'; if(el.tags.amenity == 'school') { icon='🎓'; color='#2563eb'; } if(el.tags.amenity == 'hospital') { icon='🏥'; color='#ef4444'; } if(el.tags.shop == 'supermarket') { icon='🛒'; color='#f97316'; } if(el.tags.amenity == 'bank') { icon='🏦'; color='#8b5cf6'; } const name = el.tags.name || 'Unknown Place'; list.innerHTML += `<div class="flex justify-between py-2 border-b border-slate-50 items-center"><div class="flex items-center gap-2"><span class="text-lg">${icon}</span> <span class="text-xs font-bold truncate">${name}</span></div><span class="font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded text-[10px]">${distTxt}</span></div>`; const html = `<div class="dist-marker" style="border-left-color:${color}"><div class="dist-name">${name}</div><div class="dist-val"><span>${icon}</span> ${distTxt}</div></div>`; L.marker([el.lat, el.lon], {icon: L.divIcon({className:'', html:html, iconSize:[120,40], iconAnchor:[60,45]})}).addTo(nearbyLayer); }); } catch(e) { console.log(e); list.innerHTML = "Error: Check internet."; } }
+        
+        // IMPROVED: Nearby Places Logic
+        async function calcDistanceOnMap(lat, lng) { 
+            nearbyLayer.clearLayers(); 
+            const list = document.getElementById('nearbyList'); 
+            list.innerHTML = `<div class="flex items-center gap-3 text-slate-500"><div class="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div><span class="text-xs font-bold animate-pulse">Scanning nearby...</span></div>`; 
+            
+            const query = `[out:json][timeout:25];(nwr["amenity"~"school|hospital|bank|pharmacy|fuel"](around:2000,${lat},${lng});nwr["shop"~"supermarket|convenience"](around:2000,${lat},${lng});nwr["highway"="bus_stop"](around:2000,${lat},${lng}););out center;`; 
+            
+            try { 
+                const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`); 
+                const data = await res.json(); 
+                list.innerHTML = ""; 
+                if(data.elements.length === 0) { list.innerHTML = "<p class='text-xs text-slate-400 italic'>No major landmarks within 2km.</p>"; return; }
+                
+                const places = data.elements.map(el => { 
+                    const pLat = el.lat || (el.center && el.center.lat); 
+                    const pLon = el.lon || (el.center && el.center.lon); 
+                    if(!pLat || !pLon) return null; 
+                    const d = map.distance([lat, lng], [pLat, pLon]); 
+                    return { ...el, dist: d, lat: pLat, lon: pLon }; 
+                }).filter(el => el !== null).sort((a,b) => a.dist - b.dist).slice(0, 6); 
+
+                places.forEach(el => { 
+                    const distTxt = el.dist > 1000 ? (el.dist/1000).toFixed(1)+"km" : Math.round(el.dist)+"m"; 
+                    let icon='📍', color='#64748b', typeName='Place';
+                    const t = el.tags;
+                    if(t.amenity === 'school') { icon='🎓'; color='#2563eb'; typeName='School'; } 
+                    else if(t.amenity === 'hospital') { icon='🏥'; color='#ef4444'; typeName='Hospital'; } 
+                    else if(t.shop === 'supermarket' || t.shop === 'convenience') { icon='🛒'; color='#f97316'; typeName='Supermarket'; } 
+                    else if(t.amenity === 'bank') { icon='🏦'; color='#8b5cf6'; typeName='Bank'; }
+                    else if(t.amenity === 'fuel') { icon='⛽'; color='#eab308'; typeName='Fuel Station'; }
+                    else if(t.highway === 'bus_stop') { icon='🚌'; color='#06b6d4'; typeName='Bus Stop'; }
+                    else if(t.amenity === 'pharmacy') { icon='💊'; color='#ec4899'; typeName='Pharmacy'; }
+
+                    const name = t.name || t['name:si'] || t['name:en'] || typeName; 
+                    list.innerHTML += `<div class="flex justify-between py-2.5 border-b border-slate-100 last:border-0 items-center group cursor-pointer hover:bg-slate-50 px-2 rounded-lg transition" onclick="map.flyTo([${el.lat}, ${el.lon}], 16)"><div class="flex items-center gap-3"><span class="text-lg bg-slate-100 w-8 h-8 flex items-center justify-center rounded-full shadow-sm">${icon}</span><div class="flex flex-col"><span class="text-xs font-bold text-slate-700 truncate max-w-[150px]">${name}</span><span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">${typeName}</span></div></div><span class="font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded text-[10px] whitespace-nowrap">${distTxt}</span></div>`; 
+                    const html = `<div class="dist-marker" style="border-left-color:${color}"><div class="dist-name">${name}</div><div class="dist-val"><span>${icon}</span> ${distTxt}</div></div>`; 
+                    L.marker([el.lat, el.lon], {icon: L.divIcon({className:'', html:html, iconSize:[120,40], iconAnchor:[60,45]})}).addTo(nearbyLayer); 
+                }); 
+            } catch(e) { console.log(e); list.innerHTML = "<p class='text-xs text-red-400'>Check internet.</p>"; } 
+        }
+
         window.shareLink = () => navigator.clipboard.writeText(window.location.href).then(() => alert("Link Copied! 🔗"));
         window.slide = (n) => { idx += n; if(idx >= currentImgs.length) idx = 0; if(idx < 0) idx = currentImgs.length - 1; document.getElementById('detailImg').src = currentImgs[idx]; };
         
