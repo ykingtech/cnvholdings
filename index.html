@@ -315,7 +315,7 @@
 
         <div class="p-4 bg-white border-t border-slate-100 grid grid-cols-2 gap-4 pb-8">
             <a id="waBtn" href="#" target="_blank" class="bg-[#25D366] text-white py-3.5 rounded-xl font-bold text-center flex items-center justify-center gap-2 shadow-lg"><i class="fab fa-whatsapp text-lg"></i> WhatsApp</a>
-            <a href="tel:+94725486676" class="bg-slate-900 text-white py-3.5 rounded-xl font-bold text-center flex items-center justify-center gap-2"><i class="fas fa-phone-alt"></i> Call Now</a>
+            <a href="tel:+94726284277" class="bg-slate-900 text-white py-3.5 rounded-xl font-bold text-center flex items-center justify-center gap-2"><i class="fas fa-phone-alt"></i> Call Now</a>
         </div>
     </div>
 
@@ -545,7 +545,7 @@
             if(!amount) return alert("Please enter an amount!");
             const shareUrl = `${window.location.origin}${window.location.pathname}?id=${currentLand.id}`;
             const msg = `Hi, I am interested in ${currentLand.title} (${shareUrl}). My offer is Rs. ${amount}. Can we discuss?`;
-            window.open(`https://wa.me/94725486676?text=${encodeURIComponent(msg)}`, '_blank');
+            window.open(`https://wa.me/94726284277?text=${encodeURIComponent(msg)}`, '_blank');
         };
 
         window.toggleFav = (id, btn) => { if(favorites.includes(id)) { favorites = favorites.filter(x => x !== id); btn.classList.remove('text-red-500'); btn.classList.add('text-gray-300'); } else { favorites.push(id); btn.classList.add('text-red-500'); btn.classList.remove('text-gray-300'); } localStorage.setItem('cnv_favs', JSON.stringify(favorites)); if(document.getElementById('view-fav').classList.contains('active')) renderFavorites(); };
@@ -605,7 +605,7 @@
             calcDistanceOnMap(data.lat, data.lng);
             const shareUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`; 
             window.history.pushState({id: data.id}, '', shareUrl); 
-            document.getElementById('waBtn').href = `https://wa.me/94725486676?text=Hi, I'm interested in: ${shareUrl}`; 
+            document.getElementById('waBtn').href = `https://wa.me/94726284277?text=Hi, I'm interested in: ${shareUrl}`; 
             document.getElementById('detail-view').classList.add('open'); 
         };
 
