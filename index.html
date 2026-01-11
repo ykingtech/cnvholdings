@@ -126,12 +126,6 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 50vh; text-align: center; color: #64748b; animation: fadeIn 0.5s;
         }
-        .retry-btn {
-            margin-top: 15px; background: #16a34a; color: white; padding: 12px 28px;
-            border-radius: 12px; font-weight: bold; font-size: 14px;
-            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3); transition: transform 0.2s; cursor: pointer;
-        }
-        .retry-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -322,7 +316,6 @@
         
         // --- RELIABLE TIMERS & ERROR HANDLING ---
         let slowNetTimer = null;
-        let failTimer = null;
 
         window.switchTab = (tab) => {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -333,50 +326,18 @@
             if(tab === 'fav') renderFavorites();
         };
 
-        window.retryLoad = () => {
-            // Clean up old UI
-            document.getElementById('landList').innerHTML = "";
-            document.getElementById('loadMoreSpinner').style.display = 'flex';
-            
-            // Show Splash Again
-            const splash = document.getElementById('splash-screen');
-            splash.style.display = 'flex';
-            splash.style.opacity = '1';
-            splash.style.visibility = 'visible';
-            document.getElementById('splashStatus').innerText = "RETRYING...";
-            document.getElementById('splashText').innerText = "YOUR TRUSTED LAND PARTNER";
-            
-            loadLands();
-        };
-
-        function checkConnection() {
-            // Tries to fetch a tiny file from a reliable CDN to test internet
-            return fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' })
-                .then(() => true)
-                .catch(() => false);
-        }
-
         async function loadLands() {
             try {
                 const now = new Date();
-                let initialSuccess = false;
-
-                // 1. SIGNAL MONITORING
-                clearTimeout(slowNetTimer); clearTimeout(failTimer);
                 
+                // 1. SIGNAL MONITORING
+                clearTimeout(slowNetTimer);
                 slowNetTimer = setTimeout(() => {
-                    document.getElementById('splashStatus').innerText = "SIGNAL IS WEAK... DOWNLOADING...";
+                    document.getElementById('splashStatus').innerText = "SIGNAL IS WEAK... STILL TRYING...";
                     document.getElementById('splashText').innerText = "PLEASE WAIT";
-                }, 4000);
+                }, 5000);
 
-                failTimer = setTimeout(() => {
-                    console.log("Forced Timeout");
-                    if(displayedData.length === 0) {
-                        showErrorUI();
-                    }
-                }, 12000);
-
-                // --- STAGE 1: Quick Fetch (5 Items) ---
+                // --- STAGE 1: Quick Fetch ---
                 try {
                     const qLimit = query(collection(db, "lands"), limit(5)); 
                     const snapLimit = await getDocs(qLimit);
@@ -387,7 +348,6 @@
                             const data = doc.data(); data.id = doc.id;
                             let landDate = data.timestamp && data.timestamp.seconds ? new Date(data.timestamp.seconds * 1000) : (data.timestamp ? new Date(data.timestamp) : new Date(0));
                             data.sortDate = landDate; 
-                            
                             const diffDays = Math.ceil(Math.abs(now - landDate) / (1000 * 60 * 60 * 24));
                             data.isNew = diffDays <= 7;
                             if (data.status === 'sold' && data.soldAt) {
@@ -398,21 +358,8 @@
                             initialData.push(data);
                         });
 
-                        if(initialData.length > 0) {
-                            clearTimeout(slowNetTimer); clearTimeout(failTimer);
-                            initialData.sort((a, b) => b.sortDate - a.sortDate);
-                            landsData = [...initialData];
-                            displayedData = [...initialData];
-                            resetRender();
-                            updateMapMarkers(initialData);
-                            
-                            setTimeout(() => {
-                                const splash = document.getElementById('splash-screen');
-                                splash.style.opacity = '0';
-                                splash.style.visibility = 'hidden';
-                            }, 500);
-                            initialSuccess = true;
-                        }
+                        // We can potentially render partial data here, but for robustness
+                        // we will wait for the full load to be sure, or just render and keep splash until full
                     }
                 } catch(quickErr) { console.log("Quick load skipped..."); }
 
@@ -420,7 +367,7 @@
                 const qAll = query(collection(db, "lands")); 
                 const snapAll = await getDocs(qAll);
                 
-                clearTimeout(slowNetTimer); clearTimeout(failTimer);
+                clearTimeout(slowNetTimer);
 
                 let fullData = [];
                 snapAll.forEach(doc => {
@@ -440,15 +387,8 @@
                 fullData.sort((a, b) => b.sortDate - a.sortDate);
                 landsData = fullData;
 
-                // CRITICAL CHECK: If result is empty, check connection first
-                if (fullData.length === 0) {
-                     const isOnline = await checkConnection();
-                     if (!isOnline) {
-                         throw new Error("Offline"); // Jump to catch block
-                     }
-                }
-
-                if(!initialSuccess) {
+                // CRITICAL LOGIC: ONLY ENTER IF DATA EXISTS
+                if (fullData.length > 0) {
                     displayedData = [...landsData];
                     resetRender();
                     updateMapMarkers(landsData);
@@ -456,36 +396,20 @@
                     const splash = document.getElementById('splash-screen');
                     splash.style.opacity = '0';
                     splash.style.visibility = 'hidden';
-                } else if(document.getElementById('searchInput').value === "") {
-                    displayedData = [...landsData];
-                    resetRender(); 
-                    updateMapMarkers(landsData);
+                } else {
+                    // IF NO DATA (UNEXPECTED), JUST RETRY SILENTLY
+                    throw new Error("Empty Data");
                 }
 
                 const params = new URLSearchParams(window.location.search);
                 if(params.get('id')) { const l = landsData.find(x=>x.id===params.get('id')); if(l) openDetail(l); }
 
             } catch (e) { 
-                console.error("Critical Error:", e);
-                clearTimeout(slowNetTimer); clearTimeout(failTimer);
-                showErrorUI();
+                console.error("Retrying...", e);
+                // IF ERROR, WAIT AND RETRY AUTOMATICALLY. DO NOT SHOW ERROR SCREEN.
+                document.getElementById('splashStatus').innerText = "CONNECTING TO SERVER...";
+                setTimeout(loadLands, 2000); // Auto Retry after 2s
             }
-        }
-
-        function showErrorUI() {
-            const splash = document.getElementById('splash-screen');
-            splash.style.opacity = '0';
-            splash.style.visibility = 'hidden';
-            
-            document.getElementById('loadMoreSpinner').style.display = 'none';
-            document.getElementById('landList').innerHTML = `
-                <div class="retry-container">
-                    <i class="fas fa-wifi text-4xl text-slate-300 mb-4"></i>
-                    <h3 class="font-bold text-slate-700">Connection Failed</h3>
-                    <p class="text-xs mt-1">Internet signal is too weak.</p>
-                    <button onclick="retryLoad()" class="retry-btn">↻ Try Again</button>
-                </div>
-            `;
         }
 
         function updateMapMarkers(dataArray) {
@@ -524,8 +448,7 @@
             const listDiv = document.getElementById('landList'); const spinner = document.getElementById('loadMoreSpinner');
             if(renderCount >= displayedData.length) { 
                 spinner.style.display = 'none'; 
-                // ONLY SHOW 'NO PROPERTIES' IF GENUINELY EMPTY AND NOT IN ERROR STATE
-                if(displayedData.length === 0) listDiv.innerHTML = '<p class="text-center text-slate-400 py-10">No properties found.</p>'; 
+                // REMOVED "NO PROPERTIES" MESSAGE
                 return; 
             }
             const nextBatch = displayedData.slice(renderCount, renderCount + BATCH_SIZE);
