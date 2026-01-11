@@ -126,6 +126,12 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 50vh; text-align: center; color: #64748b; animation: fadeIn 0.5s;
         }
+        .retry-btn {
+            margin-top: 15px; background: #16a34a; color: white; padding: 12px 28px;
+            border-radius: 12px; font-weight: bold; font-size: 14px;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3); transition: transform 0.2s; cursor: pointer;
+        }
+        .retry-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -151,6 +157,11 @@
             <div class="loader-line"><div class="loader-fill"></div></div>
             <p id="splashStatus" class="text-slate-400 text-[10px] mt-4 font-bold tracking-widest animate-pulse">LOADING PROPERTIES...</p>
         </div>
+    </div>
+
+    <div id="conn-status" onclick="manualCheckConnection()" class="fixed top-3 left-3 z-[1000] flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-800/80 backdrop-blur-md border border-white/10 shadow-lg cursor-pointer transition-all hover:scale-105">
+        <div id="conn-dot" class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
+        <span id="conn-text" class="text-[10px] font-bold text-white tracking-widest uppercase">CHECKING</span>
     </div>
 
     <div id="secret-screen" class="fixed inset-0 z-[99999] hidden flex-col items-center justify-center text-center p-6 opacity-0" onclick="closeSecret()">
@@ -296,11 +307,61 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, query, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query, limit, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyA30v8yswbyqF-oB29C7DXPWpKwCQscs5o", authDomain: "land-425be.firebaseapp.com", projectId: "land-425be", storageBucket: "land-425be.firebasestorage.app", messagingSenderId: "1053755182230", appId: "1:1053755182230:web:9596bee1de56a3c63e86b7", measurementId: "G-DQVYCKN9KY" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // --- OFFLINE DATA SAVE (PERSISTENCE) ---
+        enableIndexedDbPersistence(db).catch((err) => {
+            if (err.code == 'failed-precondition') {
+                console.log('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+            } else if (err.code == 'unimplemented') {
+                console.log('The current browser does not support all of the features required to enable persistence');
+            }
+        });
+
+        // --- CONNECTION STATUS LOGIC ---
+        function checkConnection() {
+            // Tries to fetch a tiny file from a reliable CDN to test internet
+            return fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' })
+                .then(() => true)
+                .catch(() => false);
+        }
+
+        function updateConnUI(status) {
+            const dot = document.getElementById('conn-dot');
+            const txt = document.getElementById('conn-text');
+            const box = document.getElementById('conn-status');
+            
+            if(status === 'online') {
+                dot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]";
+                txt.innerText = "ONLINE";
+                box.className = "fixed top-3 left-3 z-[1000] flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-900/80 backdrop-blur-md border border-emerald-500/30 shadow-lg cursor-pointer transition-all hover:scale-105";
+            } else if(status === 'offline') {
+                dot.className = "w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_#ef4444] animate-pulse";
+                txt.innerText = "OFFLINE";
+                box.className = "fixed top-3 left-3 z-[1000] flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-900/80 backdrop-blur-md border border-red-500/30 shadow-lg cursor-pointer transition-all hover:scale-105";
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse";
+                txt.innerText = "CHECKING";
+                box.className = "fixed top-3 left-3 z-[1000] flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-800/80 backdrop-blur-md border border-white/10 shadow-lg cursor-pointer transition-all hover:scale-105";
+            }
+        }
+
+        window.manualCheckConnection = async () => {
+            updateConnUI('checking');
+            const isOnline = await checkConnection();
+            updateConnUI(isOnline ? 'online' : 'offline');
+            if(isOnline && landsData.length === 0) loadLands(); // Retry load if empty
+        };
+
+        window.addEventListener('online', () => manualCheckConnection());
+        window.addEventListener('offline', () => updateConnUI('offline'));
+        
+        // Initial check
+        manualCheckConnection();
 
         const cityMapping = { "කොළඹ": "colombo", "නුගේගොඩ": "nugegoda", "මහරගම": "maharagama", "පිලියන්දල": "piliyandala", "කැස්බෑව": "kesbewa", "බණ්ඩාරගම": "bandaragama", "හොරණ": "horana", "පානදුර": "panadura", "වාද්දුව": "wadduwa", "කළුතර": "kalutara", "මතුගම": "mathugama", "අලුත්ගම": "aluthgama", "බෙන්තොට": "bentota", "අම්බලන්ගොඩ": "ambalangoda", "හික්කඩුව": "hikkaduwa", "ගාල්ල": "galle", "මාතර": "matara", "වැලිගම": "weligama", "හම්බන්තොට": "hambantota", "තංගල්ල": "tangalle", "ඇඹිලිපිටිය": "embilipitiya", "රත්නපුර": "rathnapura", "අවිස්සාවේල්ල": "avissawella", "හෝමාගම": "homagama", "කොට්ටාව": "kottawa", "මාලබේ": "malabe", "බත්තරමුල්ල": "battaramulla", "රාජගිරිය": "rajagiriya", "කඩවත": "kadawatha", "කැලණිය": "kelaniya", "වත්තල": "wattala", "ජාඇල": "ja-ela", "මීගමුව": "negombo", "ගම්පහ": "gampaha", "වේයන්ගොඩ": "veyangoda", "නිට්ටඹුව": "nittambuwa", "වරකාපොල": "warakapola", "කෑගල්ල": "kegalle", "මාවනැල්ල": "mawanella", "නුවර": "kandy", "මහනුවර": "kandy", "පේරාදෙණිය": "peradeniya", "ගම්පොල": "gampola", "නාවලපිටිය": "nawalapitiya", "හැටන්": "hatton", "නුවරඑළිය": "nuwaraeliya", "බණ්ඩාරවෙල": "bandarawela", "බදුල්ල": "badulla", "මොණරාගල": "monaragala", "කුරුණෑගල": "kurunegala", "වාරියපොල": "wariyapola", "කුලියාපිටිය": "kuliyapitiya", "පුත්තලම": "puttalam", "හලාවත": "chilaw", "අනුරාධපුරය": "anuradhapura", "පොළොන්නරුව": "polonnaruwa", "දඹුල්ල": "dambulla", "සීගිරිය": "sigiriya", "ත්‍රිකුණාමලය": "trincomalee", "මඩකලපුව": "batticaloa", "යාපනය": "jaffna" };
 
@@ -314,7 +375,7 @@
         let nearbyLayer = L.layerGroup().addTo(map); let landLayer = L.layerGroup().addTo(map); 
         let selectedLandId = null; let favorites = JSON.parse(localStorage.getItem('cnv_favs')) || [];
         
-        // --- RELIABLE TIMERS & ERROR HANDLING ---
+        // --- RELIABLE TIMERS ---
         let slowNetTimer = null;
 
         window.switchTab = (tab) => {
@@ -333,12 +394,13 @@
                 // 1. SIGNAL MONITORING
                 clearTimeout(slowNetTimer);
                 slowNetTimer = setTimeout(() => {
-                    document.getElementById('splashStatus').innerText = "SIGNAL IS WEAK... STILL TRYING...";
+                    document.getElementById('splashStatus').innerText = "SIGNAL IS WEAK... USING OFFLINE DATA...";
                     document.getElementById('splashText').innerText = "PLEASE WAIT";
-                }, 5000);
+                }, 4000);
 
                 // --- STAGE 1: Quick Fetch ---
                 try {
+                    // Cache එකෙන් හරි ඉක්මනට ඩේටා එනවද බලනවා
                     const qLimit = query(collection(db, "lands"), limit(5)); 
                     const snapLimit = await getDocs(qLimit);
                     
@@ -357,14 +419,12 @@
                             if(!data.imageUrls) data.imageUrls = [data.imageUrl];
                             initialData.push(data);
                         });
-
-                        // We can potentially render partial data here, but for robustness
-                        // we will wait for the full load to be sure, or just render and keep splash until full
                     }
                 } catch(quickErr) { console.log("Quick load skipped..."); }
 
                 // --- STAGE 2: Full Load ---
                 const qAll = query(collection(db, "lands")); 
+                // Persistence On කරලා තියෙන නිසා සිග්නල් නැති වුනත් මෙතනින් කලින් ලෝඩ් වුන ඩේටා එනවා
                 const snapAll = await getDocs(qAll);
                 
                 clearTimeout(slowNetTimer);
@@ -397,7 +457,6 @@
                     splash.style.opacity = '0';
                     splash.style.visibility = 'hidden';
                 } else {
-                    // IF NO DATA (UNEXPECTED), JUST RETRY SILENTLY
                     throw new Error("Empty Data");
                 }
 
@@ -406,9 +465,8 @@
 
             } catch (e) { 
                 console.error("Retrying...", e);
-                // IF ERROR, WAIT AND RETRY AUTOMATICALLY. DO NOT SHOW ERROR SCREEN.
                 document.getElementById('splashStatus').innerText = "CONNECTING TO SERVER...";
-                setTimeout(loadLands, 2000); // Auto Retry after 2s
+                setTimeout(loadLands, 2000); // Auto Retry
             }
         }
 
@@ -448,7 +506,6 @@
             const listDiv = document.getElementById('landList'); const spinner = document.getElementById('loadMoreSpinner');
             if(renderCount >= displayedData.length) { 
                 spinner.style.display = 'none'; 
-                // REMOVED "NO PROPERTIES" MESSAGE
                 return; 
             }
             const nextBatch = displayedData.slice(renderCount, renderCount + BATCH_SIZE);
