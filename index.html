@@ -523,7 +523,8 @@
             const div = document.createElement('div');
             div.className = "land-card bg-white p-3 rounded-2xl shadow-sm border border-slate-100 active:scale-[0.98] transition cursor-pointer flex gap-4 group relative";
             div.style.animationDelay = `${index * 0.1}s`;
-            div.innerHTML = `<div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 relative bg-slate-100"><img src="${data.imageUrls?.[0] || ''}" class="w-full h-full object-cover">${isSold ? '<div class="absolute inset-0 bg-red-500/50 flex items-center justify-center"><span class="bg-red-600 border border-white text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">SOLD</span></div>' : ''}${!isSold && data.isNew ? '<div class="absolute top-0 left-0 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br-lg shadow">NEW</div>' : ''}</div><div class="flex-1 flex flex-col justify-center min-w-0" onclick="openDetail(this.parentElement.data)"><h3 class="font-bold text-slate-800 text-lg leading-tight mb-1 truncate">${data.title}</h3><p class="text-xs text-slate-500 mb-1 truncate">📍 ${data.location}</p><p class="text-green-600 font-bold text-base">${formatPrice(data)}</p></div><button onclick="toggleFav('${data.id}', this)" class="absolute top-2 right-2 p-2 rounded-full ${isFav ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}"><i class="fas fa-heart"></i></button>`;
+            // IMPROVEMENT: Added loading="lazy" and decoding="async" to img for faster initial render
+            div.innerHTML = `<div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 relative bg-slate-100"><img src="${data.imageUrls?.[0] || ''}" loading="lazy" decoding="async" class="w-full h-full object-cover">${isSold ? '<div class="absolute inset-0 bg-red-500/50 flex items-center justify-center"><span class="bg-red-600 border border-white text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">SOLD</span></div>' : ''}${!isSold && data.isNew ? '<div class="absolute top-0 left-0 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br-lg shadow">NEW</div>' : ''}</div><div class="flex-1 flex flex-col justify-center min-w-0" onclick="openDetail(this.parentElement.data)"><h3 class="font-bold text-slate-800 text-lg leading-tight mb-1 truncate">${data.title}</h3><p class="text-xs text-slate-500 mb-1 truncate">📍 ${data.location}</p><p class="text-green-600 font-bold text-base">${formatPrice(data)}</p></div><button onclick="toggleFav('${data.id}', this)" class="absolute top-2 right-2 p-2 rounded-full ${isFav ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}"><i class="fas fa-heart"></i></button>`;
             div.data = data; container.appendChild(div);
         }
 
@@ -606,7 +607,11 @@
             calcDistanceOnMap(data.lat, data.lng);
             const shareUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`; 
             window.history.pushState({id: data.id}, '', shareUrl); 
-            document.getElementById('waBtn').href = `https://wa.me/94726284277?text=Hi, I'm interested in: ${shareUrl}`; 
+            
+            // IMPROVEMENT: WhatsApp button now includes Title + Link
+            const msgBody = `Hi, I am interested in ${data.title}. Here is the link: ${shareUrl}`;
+            document.getElementById('waBtn').href = `https://wa.me/94726284277?text=${encodeURIComponent(msgBody)}`; 
+            
             document.getElementById('detail-view').classList.add('open'); 
         };
 
