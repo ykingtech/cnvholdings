@@ -365,11 +365,31 @@
 
         const cityMapping = { "කොළඹ": "colombo", "නුගේගොඩ": "nugegoda", "මහරගම": "maharagama", "පිලියන්දල": "piliyandala", "කැස්බෑව": "kesbewa", "බණ්ඩාරගම": "bandaragama", "හොරණ": "horana", "පානදුර": "panadura", "වාද්දුව": "wadduwa", "කළුතර": "kalutara", "මතුගම": "mathugama", "අලුත්ගම": "aluthgama", "බෙන්තොට": "bentota", "අම්බලන්ගොඩ": "ambalangoda", "හික්කඩුව": "hikkaduwa", "ගාල්ල": "galle", "මාතර": "matara", "වැලිගම": "weligama", "හම්බන්තොට": "hambantota", "තංගල්ල": "tangalle", "ඇඹිලිපිටිය": "embilipitiya", "රත්නපුර": "rathnapura", "අවිස්සාවේල්ල": "avissawella", "හෝමාගම": "homagama", "කොට්ටාව": "kottawa", "මාලබේ": "malabe", "බත්තරමුල්ල": "battaramulla", "රාජගිරිය": "rajagiriya", "කඩවත": "kadawatha", "කැලණිය": "kelaniya", "වත්තල": "wattala", "ජාඇල": "ja-ela", "මීගමුව": "negombo", "ගම්පහ": "gampaha", "වේයන්ගොඩ": "veyangoda", "නිට්ටඹුව": "nittambuwa", "වරකාපොල": "warakapola", "කෑගල්ල": "kegalle", "මාවනැල්ල": "mawanella", "නුවර": "kandy", "මහනුවර": "kandy", "පේරාදෙණිය": "peradeniya", "ගම්පොල": "gampola", "නාවලපිටිය": "nawalapitiya", "හැටන්": "hatton", "නුවරඑළිය": "nuwaraeliya", "බණ්ඩාරවෙල": "bandarawela", "බදුල්ල": "badulla", "මොණරාගල": "monaragala", "කුරුණෑගල": "kurunegala", "වාරියපොල": "wariyapola", "කුලියාපිටිය": "kuliyapitiya", "පුත්තලම": "puttalam", "හලාවත": "chilaw", "අනුරාධපුරය": "anuradhapura", "පොළොන්නරුව": "polonnaruwa", "දඹුල්ල": "dambulla", "සීගිරිය": "sigiriya", "ත්‍රිකුණාමලය": "trincomalee", "මඩකලපුව": "batticaloa", "යාපනය": "jaffna" };
 
-        const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png');
-        const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Esri' });
-        const map = L.map('map', { zoomControl: false, tap: false, layers: [streetLayer] }).setView([6.9271, 79.8612], 9);
+        // --- GOOGLE MAPS LAYERS ---
+        const googleStreets = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+
+        const googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+
+        const map = L.map('map', { zoomControl: false, tap: false, layers: [googleStreets] }).setView([6.9271, 79.8612], 9);
         let currentLayer = 'street';
-        window.toggleSat = () => { if(currentLayer === 'street') { map.removeLayer(streetLayer); map.addLayer(satLayer); currentLayer='sat'; } else { map.removeLayer(satLayer); map.addLayer(streetLayer); currentLayer='street'; } };
+
+        window.toggleSat = () => { 
+            if(currentLayer === 'street') { 
+                map.removeLayer(googleStreets); 
+                map.addLayer(googleSat); 
+                currentLayer='sat'; 
+            } else { 
+                map.removeLayer(googleSat); 
+                map.addLayer(googleStreets); 
+                currentLayer='street'; 
+            } 
+        };
 
         let landsData = []; let displayedData = []; let renderCount = 0; const BATCH_SIZE = 5; 
         let nearbyLayer = L.layerGroup().addTo(map); let landLayer = L.layerGroup().addTo(map); 
